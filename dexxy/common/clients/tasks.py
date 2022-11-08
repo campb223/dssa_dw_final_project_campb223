@@ -1,4 +1,4 @@
-from typing import List, Union, TypeVar, Any, Callable
+from typing import List, Union, TypeVar, Any, Callable, Literal
 from inspect import signature
 #from utils.logger import LoggingMsg
 #from utils.exceptions import CompatibilityException, MissingTypeHintException
@@ -69,3 +69,46 @@ class BaseTask(AbstractTask):
     def run(self, *args, **kwargs) -> Any:
         return self.func(*args, **kwargs)
 
+class Task(BaseTask):
+    def __init__(
+        self,
+        func: Callable,
+        kwargs: dict = {},
+        dependOn: List = None,
+        skipValidation: bool = False,
+        name: str = None,
+        desc: str = None) -> None:
+        
+        super().__init__(func=func)    
+        self.kwargs = kwargs
+        self.dependOn = dependOn
+        self.skipValidation = skipValidation
+        self.name = name
+        self.desc = desc
+        self.status = "Not Started"
+        self.related = []
+        self.result = None
+
+    def __str__(self) -> str:
+        from pprint import pprint
+        s = dict()
+        s['Activity'] = self.__dict__.copy()
+        return str(pprint(s))
+    
+    def __repr__(self) -> str:
+        return "<class '{}({})>'".format(
+            self.__class__.__name__,
+            ''.join('{}={!r},'.format(k,v) for k,v in self.__dict__.items())
+        )
+        
+    def updateStatus(self, status: Literal['Not Started', 'Queued', 'Running', 'Completed', 'Failed'] = 'Not Started') -> None:
+        self.status = status
+        
+    def run(self, inputs:tuple):
+        self.result = self._run_(*inputs, **self.kwargs)
+        
+def createTask(inputs: Union[Task, tuple]):
+    if isinstance(inputs, Task):
+        return inputs
+    task = Task(*inputs)
+    return Task
