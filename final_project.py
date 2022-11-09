@@ -1,9 +1,9 @@
 import pandas as pd
-#from psycopg import Connection, Cursor
+from psycopg import Connection, Cursor
 from pypika import PostgreSQLQuery
 from pypika import Query, Schema, Column
 from dexxy.common.clients.tasks import Task
-#from dexxy.common.clients.postgres import PostgresClient
+from dexxy.common.clients.postgres import PostgresClient
 from typing import List
 
 
@@ -165,4 +165,11 @@ def main():
     
     
     ### Execution
+    # Local Execution
     setupDwWorkflow.run()
+
+    # To Schedule DAG 
+    #setupDwWorkflow.submit()    
+    
+if __name__ == '__main__':
+    main()
