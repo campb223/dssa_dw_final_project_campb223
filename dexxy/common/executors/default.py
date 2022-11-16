@@ -1,5 +1,5 @@
 from dexxy.common.executors.base import BaseExecutor
-from dexxy.common.logger import LoggingMsg
+from dexxy.common.clients.logger import LoggingMsg
 from dexxy.common.clients.utils import getTaskResult
 from typing import TypeVar
 
