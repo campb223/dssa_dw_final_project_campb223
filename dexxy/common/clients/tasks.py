@@ -1,8 +1,8 @@
 from typing import List, Union, TypeVar, Any, Callable, Literal
 from inspect import signature
-#from utils.logger import LoggingMsg
-#from utils.exceptions import CompatibilityException, MissingTypeHintException
-#from utils.utils import generateUUID
+from logger import LoggingMsg
+from exceptions import CompatibilityException, MissingTypeHintException
+from utils import generateUniqueID
 from abc import ABCMeta, abstractclassmethod
 
 
@@ -12,28 +12,48 @@ class AbstractTask(metaclass=ABCMeta):
     
     @abstractclassmethod
     def run(self):
-        #raise NotImplementedError('This must be implemented by a subclass.')
-        raise Exception("We have an error")
+        """Abstract class of Task that must be implemented by the BaseTask class
+
+        Raises:
+            NotImplementedError: If this class isn't implemented by the BaseTask Class - throw an error
+        """
+        raise NotImplementedError('This must be implemented by a subclass.')
     
 
-#class BaseTask(AbstractTask, LoggingMsg): 
-class BaseTask(AbstractTask): 
+class BaseTask(AbstractTask): #LoggingMsg): 
+    """_summary_
+
+    Args:
+        AbstractTask (_type_): _description_
+        LoggingMsg (_type_): _description_
+    """
     def __init__(self, func: Task) -> None:
-        #self.tid = generateUniqueID()
+        self.tid = generateUniqueID()
         self.func = func
     
     def __input__(self) -> List:
+        """
+        Parse the arguments of func to a list of allowed types. 
+        
+        
+        """
         annotationList = [x.annotation for x in signature(self.func).parameters.values()]
         return annotationList
 
     def __output__(self) -> Any:
+        """
+        Parse the Return type from func
+        
+        Returns:
+            returnAnnotation : type annotation for the return statement of func
+        """
         
         try:
             returnAnnotation = self.func.__annotations__['return']
             return returnAnnotation
         except:
-            raise Exception
-            #raise MissingTypeHintException(f"No type hint was provided for the {self.func.__name__}'s return")
+            #raise Exception
+            raise MissingTypeHintException(f"No type hint was provided for the {self.func.__name__}'s return")
 
     def __str__(self) -> str:
         """
@@ -56,13 +76,14 @@ class BaseTask(AbstractTask):
         )
     
     def validate(self, other: Task) -> bool:
+        # Comments in Building Tasks 27:05 into vid
         _val = any(other.__output__() is arg for arg in self.__input__())
         
         if _val is not True:
             error = f"Validation Failed. Output of {other.func.__name__,}" \
                 + f"is incompatible with inputs from {self.func.__name__}"
-            raise Exception(error)
-            #raise CompatibilityException(error)
+            #raise Exception(error)
+            raise CompatibilityException(error)
         else:
             return True
         

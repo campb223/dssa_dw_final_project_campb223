@@ -8,7 +8,7 @@ class QueueWarehouse:
     def warehouse(type: str ='default') -> Union[ThreadSafeQueue, AsyncQueue, JoinableQueue]:
         """
         Warehouse that returns a queue based on the provided type
-        
+        Queues 11:06 in video
         
         """
         
