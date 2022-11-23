@@ -1,5 +1,5 @@
 import pandas as pd
-from psycopg import Connection, Cursor
+#from psycopg import Connection, Cursor
 from pypika import PostgreSQLQuery
 from pypika import Query, Schema, Column
 from dexxy.common.clients.tasks import Task

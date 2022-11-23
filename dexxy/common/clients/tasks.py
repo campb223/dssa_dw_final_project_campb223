@@ -1,6 +1,6 @@
 from typing import List, Union, TypeVar, Any, Callable, Literal
 from inspect import signature
-from logger import LoggingMsg
+from dexxy.common.clients.logger import LoggingMsg
 from exceptions import CompatibilityException, MissingTypeHintException
 from utils import generateUniqueID
 from abc import ABCMeta, abstractclassmethod

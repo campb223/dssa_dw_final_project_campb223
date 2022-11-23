@@ -15,7 +15,7 @@ class DefaultWorker(LoggingMsg):
         self.resultQueue = resultQueue
         self._log = self.logger
         
-    def run(self):
+    def run(self): 
         
         while not self.taskQueue.empty():
             
