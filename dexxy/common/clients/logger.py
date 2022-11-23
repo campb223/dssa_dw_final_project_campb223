@@ -1,11 +1,12 @@
 import logging
+import sys
 
-
-def LoggingMsg():
-    
-    # Set the message to output and level
-    logging.basicConfig(level=logging.INFO, format='%(asctime)s :: %(levelname)s :: %(message)s')
-
-    # Create a logger
-    loggerMsg = logging.getLogger(__name__)
-    return loggerMsg
+class LoggingStuff(object):
+    """
+    The purpsose of this class is to log messagges so we can monitor the progress during runtime. 
+    """
+    @property
+    def logger(self, level: str = 'INFO', **kwargs):
+        logging.basicConfig(stream=sys.stdout, level=level, format='%(asctime)s :: %(name)s :: %(levelname)s :: %(message)s', **kwargs)
+        name = '.'.join([self.__class__.__module__, self.__class__.__name__])
+        return logging.getLogger(name)
