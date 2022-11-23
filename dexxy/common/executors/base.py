@@ -1,6 +1,6 @@
 from abc import abstractclassmethod, ABCMeta
 from dexxy.common.clients.utils import generateUniqueID
-from dexxy.common.clients.logger import LoggingMsg
+from dexxy.common.clients.logger import LoggingStuff
 from typing import TypeVar
 
 
@@ -17,7 +17,7 @@ class AbstractBaseExecutor(metaclass=ABCMeta):
         return NotImplementedError('Abstract Method that must be called by the subclass')
     
     
-class BaseExecutor(AbstractBaseExecutor, LoggingMsg):
+class BaseExecutor(AbstractBaseExecutor, LoggingStuff):
     
     job_id = generateUniqueID()
     

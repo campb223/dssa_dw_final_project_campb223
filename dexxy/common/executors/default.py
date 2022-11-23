@@ -1,12 +1,11 @@
-from dexxy.common.executors.base import BaseExecutor
-from dexxy.common.clients.logger import LoggingMsg
+from base import BaseExecutor
+from dexxy.common.clients.logger import LoggingStuff
 from dexxy.common.clients.utils import getTaskResult
 from typing import TypeVar
 
 Queue = TypeVar('Queue')
 
-class DefaultWorker(LoggingMsg):
-#class DefaultWorker():
+class DefaultWorker(LoggingStuff):
     workerID = 0
     
     def __init__(self, taskQueue: Queue, resultQueue: Queue):
@@ -46,9 +45,9 @@ class DefaultExecutor(BaseExecutor):
         
     def start(self):
         self._log.info('Starting Job %s' % self.jobId)
-        worker = DefaultWorker(self.taskQueue, self.resultQueue)
-        worker.run()
+        self.worker = DefaultWorker(self.taskQueue, self.resultQueue)
+        return self.worker.run()
         
     def end(self):
-        del worker
-        del self.resultQueue
+        del self.worker
+        #del self.resultQueue
