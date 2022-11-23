@@ -1,4 +1,4 @@
-from typing import List, Union, TypeVar, Any, Callable, Literal
+from typing import List, Union, TypeVar, Any, Callable, Literal, Dict, Tuple
 from inspect import signature
 from logger import LoggingStuff
 from exceptions import CompatibilityException, MissingTypeHintException
@@ -7,36 +7,45 @@ from abc import ABCMeta, abstractclassmethod
 
 
 Task = TypeVar('Task')
+Pipeline = TypeVar('Pipeline')
+
 
 class AbstractTask(metaclass=ABCMeta):
+    """Abstract class of Task that must be implemented by the BaseTask class
+
+    Raises:
+        NotImplementedError: If this class isn't implemented by the BaseTask Class - throw an error
+    """
+    
+    @abstractclassmethod
+    def validate(self):
+        raise NotImplementedError('This must be implemented by a subclass.')
     
     @abstractclassmethod
     def run(self):
-        """Abstract class of Task that must be implemented by the BaseTask class
-
-        Raises:
-            NotImplementedError: If this class isn't implemented by the BaseTask Class - throw an error
-        """
+        
         raise NotImplementedError('This must be implemented by a subclass.')
     
 
-class BaseTask(AbstractTask): #LoggingMsg): 
+class BaseTask(AbstractTask, LoggingStuff):
     """_summary_
 
     Args:
         AbstractTask (_type_): _description_
         LoggingMsg (_type_): _description_
     """
-    def __init__(self, func: Task) -> None:
+    
+    def __init__(self, func: Callable) -> None:
+        super().__init__()
         self.tid = generateUniqueID()
         self.func = func
+        self._log = self.logger
     
     def __input__(self) -> List:
         """
         Parse the arguments of func to a list of allowed types. 
-        
-        
         """
+        
         annotationList = [x.annotation for x in signature(self.func).parameters.values()]
         return annotationList
 
@@ -52,7 +61,6 @@ class BaseTask(AbstractTask): #LoggingMsg):
             returnAnnotation = self.func.__annotations__['return']
             return returnAnnotation
         except:
-            #raise Exception
             raise MissingTypeHintException(f"No type hint was provided for the {self.func.__name__}'s return")
 
     def __str__(self) -> str:
@@ -79,26 +87,33 @@ class BaseTask(AbstractTask): #LoggingMsg):
         # Comments in Building Tasks 27:05 into vid
         _val = any(other.__output__() is arg for arg in self.__input__())
         
+        if other.__output__() is Any:
+            error = f"Cannot check compatibility with previous task {other.func.__name__} when return type is 'Any'"
+            raise CompatibilityException(error)
+        
         if _val is not True:
-            error = f"Validation Failed. Output of {other.func.__name__,}" \
-                + f"is incompatible with inputs from {self.func.__name__}"
-            #raise Exception(error)
+            error = f"Validation Failed. Output of {other.func.__name__,}" + f"is incompatible with inputs from {self.func.__name__}"
             raise CompatibilityException(error)
         else:
             return True
         
     def run(self, *args, **kwargs) -> Any:
-        return self.func(*args, **kwargs)
-
+        try:
+            return self.func(*args, **kwargs)
+        except Exception as error:
+            self._log.exception(error, exc_info=True, stack_info=True)
+ 
+ 
+            
 class Task(BaseTask):
     def __init__(
-        self,
-        func: Callable,
-        kwargs: dict = {},
-        dependOn: List = None,
-        skipValidation: bool = False,
-        name: str = None,
-        desc: str = None) -> None:
+            self,
+            func: Callable,
+            kwargs: dict = {},
+            dependOn: List = None,
+            skipValidation: bool = False,
+            name: str = None,
+            desc: str = None) -> None:
         
         super().__init__(func=func)    
         self.kwargs = kwargs
@@ -131,5 +146,7 @@ class Task(BaseTask):
 def createTask(inputs: Union[Task, tuple]):
     if isinstance(inputs, Task):
         return inputs
-    task = Task(*inputs)
-    return Task
+    elif isinstance(inputs, Tuple):
+        return Task(*inputs)
+    else:
+        raise TypeError('Step must be a Task, Pipeline, or Tuple.')
