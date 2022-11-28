@@ -1,20 +1,22 @@
 import pandas as pd
 from psycopg import Connection, Cursor
 from pypika import PostgreSQLQuery
-from pypika import Query, Schema, Column
+from pypika import Query, Schema, Column, PostgreSQLQuery
 from dexxy.common.clients.tasks import Task
 from dexxy.common.clients.workflows import Pipeline
 from dexxy.common.clients.postgres import PostgresClient
 from typing import List
-
+import os
 
 ### Parameters
-databaseConfig = ".config\.postgres"
+databaseConfig = ".config\database.ini"
 section = 'postgresql'
 dw = Schema('dssa')
+dvd = Schema('public')
 
 
 ### Table Definitions
+# For more information on the table design, refer the the star-schema.jpg image in Provided Materials. 
 FACT_RENTAL = (
     Column('sk_customer', 'INT', False),
     Column('sk_date', 'INT', False),
@@ -73,7 +75,7 @@ def createCursor(path:str, section:str) -> Cursor:
     return cursor
 
 def createSchema(cursor: Cursor, schemaName:str) -> Cursor:
-    q = f"Create Scema If It Does Not Exist {schemaName};"
+    q = f"CREATE SCHEMA IF NOT EXISTS {schemaName};"
     cursor.execute(q)
     return cursor
 
@@ -169,8 +171,6 @@ def main():
     # Local Execution
     setupDwWorkflow.run()
 
-    # To Schedule DAG 
-    #setupDwWorkflow.submit()    
     
 if __name__ == '__main__':
     main()
