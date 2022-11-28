@@ -3,8 +3,8 @@
 
 from typing import Dict, List, Type
 from uuid import uuid4
-from exceptions import CircularDependencyError, MissingDependencyError
-from tasks import Task
+from dexxy.common.clients.exceptions import CircularDependencyError, MissingDependencyError
+from dexxy.common.clients.tasks import Task
 from networkx import (
     MultiDiGraph,
     compose,

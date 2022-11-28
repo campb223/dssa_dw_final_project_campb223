@@ -1,8 +1,9 @@
 import pandas as pd
-#from psycopg import Connection, Cursor
+from psycopg import Connection, Cursor
 from pypika import PostgreSQLQuery
 from pypika import Query, Schema, Column
 from dexxy.common.clients.tasks import Task
+from dexxy.common.clients.workflows import Pipeline
 from dexxy.common.clients.postgres import PostgresClient
 from typing import List
 
@@ -125,30 +126,30 @@ def main():
                 name='createSchema'),
             Task(createTable,
                 kwargs={'tableName': dw.dimCustomer, 'primaryKey': 'sk_customer', 'definition':DIM_CUSTOMER},
-                dependOn=['createSchema'],
+                dependsOn=['createSchema'],
                 name='createDimCustomer'),
             Task(createTable,
                 kwargs={'tableName': dw.dimStore, 'primaryKey': 'sk_store', 'definition':DIM_STORE},
-                dependOn=['createSchema'],
+                dependsOn=['createSchema'],
                 name='createDimStore'),
             Task(createTable,
                 kwargs={'tableName': dw.dimFilm, 'primaryKey': 'sk_film', 'definition':DIM_FILM},
-                dependOn=['createSchema'],
+                dependsOn=['createSchema'],
                 name='createDimFilm'),
             Task(createTable,
                 kwargs={'tableName': dw.dimStaff, 'primaryKey': 'sk_staff', 'definition':DIM_STAFF},
-                dependOn=['createSchema'],
+                dependsOn=['createSchema'],
                 name='createDimStaff'),
             Task(createTable,
                 kwargs={'tableName': dw.dimDate, 'primaryKey': 'sk_date', 'definition':DIM_DATE},
-                dependOn=['createSchema'],
+                dependsOn=['createSchema'],
                 name='createDimDate'),
             Task(createTable,
                 kwargs={
                     'tableName': dw.factRental, 'definition':FACT_RENTAL,
                     'foreignKeys': ['sk_customer', 'sk_store', 'sk_film', 'sk_staff', 'sk_date'],
                     'referenceTables': [dw.dimCustomer, dw.dimStore, dw.dimFilm, dw.dimStaff, dw.dimDate]},
-                dependOn=['createSchema'],
+                dependsOn=['createSchema'],
                 name='createFactRentals')
         ],
         type='default'

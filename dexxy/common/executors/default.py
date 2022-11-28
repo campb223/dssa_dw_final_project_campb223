@@ -1,4 +1,4 @@
-from base import BaseExecutor
+from dexxy.common.executors.base import BaseExecutor
 from dexxy.common.clients.logger import LoggingStuff
 from dexxy.common.clients.utils import getTaskResult
 from typing import TypeVar
@@ -44,7 +44,7 @@ class DefaultExecutor(BaseExecutor):
         super().__init__(taskQueue, resultQueue)
         
     def start(self):
-        self._log.info('Starting Job %s' % self.jobId)
+        self._log.info('Starting Job %s' % self.job_id)
         self.worker = DefaultWorker(self.taskQueue, self.resultQueue)
         return self.worker.run()
         

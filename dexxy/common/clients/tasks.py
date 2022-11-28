@@ -1,8 +1,8 @@
 from typing import List, Union, TypeVar, Any, Callable, Literal, Dict, Tuple
 from inspect import signature
-from logger import LoggingStuff
-from exceptions import CompatibilityException, MissingTypeHintException
-from utils import generateUniqueID
+from dexxy.common.clients.logger import LoggingStuff
+from dexxy.common.clients.exceptions import CompatibilityException, MissingTypeHintException
+from dexxy.common.clients.utils import generateUniqueID
 from abc import ABCMeta, abstractclassmethod
 
 
@@ -97,7 +97,7 @@ class BaseTask(AbstractTask, LoggingStuff):
         else:
             return True
         
-    def run(self, *args, **kwargs) -> Any:
+    def _run(self, *args, **kwargs) -> Any:
         try:
             return self.func(*args, **kwargs)
         except Exception as error:
@@ -110,14 +110,14 @@ class Task(BaseTask):
             self,
             func: Callable,
             kwargs: dict = {},
-            dependOn: List = None,
+            dependsOn: List = None,
             skipValidation: bool = False,
             name: str = None,
             desc: str = None) -> None:
         
         super().__init__(func=func)    
         self.kwargs = kwargs
-        self.dependOn = dependOn
+        self.dependsOn = dependsOn
         self.skipValidation = skipValidation
         self.name = name
         self.desc = desc
@@ -141,7 +141,7 @@ class Task(BaseTask):
         self.status = status
         
     def run(self, inputs:tuple):
-        self.result = self._run_(*inputs, **self.kwargs)
+        self.result = self._run(*inputs, **self.kwargs)
         
 def createTask(inputs: Union[Task, tuple]):
     if isinstance(inputs, Task):

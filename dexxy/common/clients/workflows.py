@@ -1,17 +1,17 @@
 # Workers 15:00 in video
 
 import cloudpickle as cpickle
-from scheduler import DefaultScheduler
-from logger import LoggingMixin
-from graphs import DAG
-from queues import QueueFactory
-from tasks import Task, create_task
-from executors.default import DefaultExecutor
-from exceptions import DependencyError, NotFoundError
+from dexxy.common.clients.scheduler import DefaultScheduler
+from dexxy.common.clients.logger import LoggingStuff
+from dexxy.common.clients.graphs import DAG
+from dexxy.common.clients.queues import QueueWarehouse
+from dexxy.common.clients.tasks import Task, createTask
+from dexxy.common.executors.default import DefaultExecutor
+from dexxy.common.clients.exceptions import DependencyError, NotFoundError
 from typing import Any, List, Literal, Tuple
 
 
-class Pipeline(DAG, LoggingMixin):
+class Pipeline(DAG, LoggingStuff):
     """A Directed Acyclic MultiGraph based Pipeline for Data Processing. """
 
     pipeline_id = 0
@@ -24,10 +24,10 @@ class Pipeline(DAG, LoggingMixin):
         Pipeline.pipeline_id += 1
         super().__init__()
         self.pid = Pipeline.pipeline_id
-        self.steps = [step if isinstance(step, Pipeline) else create_task(step) for step in steps]
+        self.steps = [step if isinstance(step, Pipeline) else createTask(step) for step in steps]
         self.type = type
         self._log = self.logger
-        self.queue = QueueFactory.factory(type=type)
+        self.queue = QueueWarehouse.warehouse(type=type)
         self.sched = DefaultScheduler()
 
     def _merge_dags(self, pipeline: "Pipeline") -> None:
@@ -71,10 +71,10 @@ class Pipeline(DAG, LoggingMixin):
             dep_task = input_pipe.get_task_by_name(name=dep)
             dag = input_pipe.dag
 
-        task.depends_on[idx] = dep_task
+        task.dependsOn[idx] = dep_task
 
         # Validate task is compatible with the dependency
-        if not task.skip_validation:
+        if not task.skipValidation:
             task.validate(dep_task)
             self._log.info('Validation Check Complete for %s & %s' % (task.name, dep_task.name))
 
@@ -91,7 +91,7 @@ class Pipeline(DAG, LoggingMixin):
         """Processes Dependencies that contain a subclass of a Task."""
 
         # Validate task is compatible with the dependency
-        if not task.skip_validation:
+        if not task.skipValidation:
             task.validate(dep)
 
         # Lookup dependent task from the current pipeline
@@ -134,15 +134,15 @@ class Pipeline(DAG, LoggingMixin):
         """
 
         with open(filename, 'wb') as f:
-            import maellin
-            cpickle.register_pickle_by_value(module=maellin)
+            import dexxy
+            cpickle.register_pickle_by_value(module=dexxy)
             cpickle.dump(obj=self.dag, file=f, protocol=protocol)
         return self
 
     def dumps(self, protocol: str = None):
         """Serializes a DAG using cloudpickle"""
-        import maellin
-        cpickle.register_pickle_by_value(module=maellin)
+        import dexxy
+        cpickle.register_pickle_by_value(module=dexxy)
         pkl_dag = str(cpickle.dumps(obj=self.dag, protocol=protocol)).encode('utf-8')
         return pkl_dag
 
@@ -216,14 +216,14 @@ class Pipeline(DAG, LoggingMixin):
                 continue
 
             # Process the dependencies
-            if task.depends_on is not None:
+            if task.dependsOn is not None:
                 # Sanity check what was provided as a dependency
-                assert isinstance(task.depends_on, List), TypeError(
+                assert isinstance(task.dependsOn, List), TypeError(
                     f'Dependencies for Task: {task.name} must be a list.')
-                assert len(task.depends_on) >= 1, ValueError(
+                assert len(task.dependsOn) >= 1, ValueError(
                     f"No Dependencies Provided for Task: {task.name}")
 
-                for idx, dep_task in enumerate(task.depends_on):
+                for idx, dep_task in enumerate(task.dependsOn):
                     assert task != dep_task, DependencyError(f'{task} cannot be \
                         both the active task and dependency')
 
@@ -247,7 +247,7 @@ class Pipeline(DAG, LoggingMixin):
         if self.is_empty():
             self.compose()
 
-        self.queue = QueueFactory.factory(self.type)
+        self.queue = QueueWarehouse.warehouse(self.type)
         # Begin Enqueuing all Tasks in the DAG
         nodes = self.get_all_nodes()
         # Get Topological sort of Task Nodes by Id
@@ -257,20 +257,20 @@ class Pipeline(DAG, LoggingMixin):
             # Enqueue Tasks & update status
             for v in n_attrs['tasks'].values():
                 self.queue.put(v)
-                v.update_status('Queued')
+                v.updateStatus('Queued')
 
     def run(self) -> Any:
         """Allows for Local Execution of a Pipeline Instance. Good for Debugging
         for advanced features and concurrency support use submit"""
-        self.result_queue = QueueFactory.factory(self.type)
+        self.result_queue = QueueWarehouse.warehouse(self.type)
         # If Queue is empty, populate it
         if self.queue.empty():
             self.collect()
 
         # Setup Default Executor
         executor = DefaultExecutor(
-            task_queue=self.queue,
-            result_queue=self.result_queue)
+            taskQueue=self.queue,
+            resultQueue=self.result_queue)
 
         # Start execution of Tasks
         self._log.info('Starting Execution')
