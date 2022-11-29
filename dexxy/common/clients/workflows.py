@@ -46,7 +46,7 @@ class Pipeline(DAG, LoggingStuff):
         dep_task = dep.steps[-1]
 
         # Validate task is compatible with the dependency
-        if not task.skip_validation:
+        if not task.skipValidation:
             task.validate(dep_task)
 
         # Update the task with uuids of related runs
@@ -57,7 +57,7 @@ class Pipeline(DAG, LoggingStuff):
             raise DependencyError(f'{dep} was not found in {self.__name__}, check pipeline steps.')
 
         # Replace the Pipeline References with Task Reference
-        task.depends_on[idx] = dep_task
+        task.dependsOn[idx] = dep_task
 
         return (task, dep_task)
 
