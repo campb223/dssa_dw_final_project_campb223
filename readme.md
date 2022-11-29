@@ -7,7 +7,7 @@ The intent of this project to implement an ETL (extract, transform, and load) pi
 ### Objectives
 The main objective of this is to implement an ETL process in python to create a Star-Schema in a Data Warehouse. 
 <br>
-![Alt text](../../../../C:/Users/13045/dssa_dw_final_project_campb223/Provided%20Materials/star-schema.jpg)
+
 <br>
 There are a few processes that need to take place to create this model. The general process looks like:
     - Connect to the existing database - DVD Rental
@@ -15,8 +15,8 @@ There are a few processes that need to take place to create this model. The gene
     - Transform the data into the necessary variable types
     - Load the data into the Data Warehouse (dw)
 <br>
-#### Table Defintions <br>
-__Fact Table: FACT_RENTAL__
+### Table Defintions 
+<b>Fact Table: FACT_RENTAL</b>
 - `sk_customer` is the `customer_id` from customer table 
 - `sk_date` is `rental_date` from the rental table
 - `sk_store` the `store_id` from the store table
@@ -24,24 +24,24 @@ __Fact Table: FACT_RENTAL__
 - `sk_staff` is the `id` from the staff table
 - `count_rentals` A count of the total rentals grouped by all other fields in the table
 <br>
-__Dimension Table: STAFF__
+<b>Dimension Table: STAFF</b>
 - `sk_staff` is the `staff_id` field from the staff table
 - `name` a concatenation of `first_name` and `last_name` from the staff table
 - `email` is the `email` field from the staff table
 <br>
-__Dimension Table: CUSTOMER__
+<b>Dimension Table: CUSTOMER</b>
 - `sk_customer` is the `customer_id` from customer table
 - `name` is the concatenation of `first_name` & `last_name` from the customer table
 - `email` is the customer's email 
 <br>
-__Dimension Table: DATE__
+<b>Dimension Table: DATE</b>
 - `sk_date` is unique `rental_date` converted into an integer so it can be used as a primary key 
 - `quarter` is a column formatted from `rental_date` for quarter of the year
 - `year` is a column formatted from `rental_date` for year
 - `month` is a column formatted from `rental_date` for month of the year
 - `day` is a column formatted from `rental_date` for day of the month
 <br>
-__Dimension Table: STORE__ 
+<b>Dimension Table: STORE</b>
 - `sk_store` the `store_id` from the store table
 - `name` (manager of the store) is the concatenation of `first_name` and `last_name` from the staff table
 - `address` is the `address` field from the address table
@@ -49,7 +49,7 @@ __Dimension Table: STORE__
 - `state` is the `district` field from the address table
 - `country` is the `country field from the country table
 <br>
-__Dimension Table: FILM__
+<b>Dimension Table: FILM</b>
 - `sk_film` is the `film_id` from the film table
 - `rating_code` is the `rating` field from the film table
 - `film_duration` is the `length` field from the film table
@@ -72,19 +72,19 @@ __Dimension Table: FILM__
 <br>
 ## How Did I Develop My Python Modules?
 <br>
-__Tasks__ - 
+`Tasks` - 
 <br>
-__Queue__ - 
+`Queue` - 
 <br>
-__Scheduler__ - 
+`Scheduler` - 
 <br>
-__Worker__ - 
+`Worker` - 
 <br>
-__Executor__ - 
+`Executor` - 
 <br>
-__DAG__ - 
+`DAG`- 
 <br>
-__Workflow__ - 
+`Workflow` - 
 <br>
 <br>
 ## How Should You Organize your `main.py`
