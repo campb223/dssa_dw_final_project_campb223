@@ -1,26 +1,13 @@
-from asyncio import Queue as AsyncQueue
 from queue import Queue as ThreadSafeQueue
-from multiprocessing import JoinableQueue
-from typing import Union
 
 class QueueWarehouse:
     @staticmethod
-    def warehouse(type: str ='default') -> Union[ThreadSafeQueue, AsyncQueue, JoinableQueue]:
+    def warehouse(type: str ='default') -> ThreadSafeQueue:
         """
-        Warehouse that returns a queue based on the provided type
-        Queues 11:06 in video
-        
+        A "Queue Warehouse" that returns a queue which can be used to execute Tasks in the order needed.        
         """
-        
-        # JUST PICK ONE QUEUE 
         
         if type == 'default':
             return ThreadSafeQueue()
-        elif type == 'multi-threading':
-            return ThreadSafeQueue()
-        elif type == 'multi-processing':
-            return JoinableQueue()
-        elif type == 'asynchio':
-            return AsyncQueue()
         else:
             raise ValueError(type)

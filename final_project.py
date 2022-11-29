@@ -1,12 +1,11 @@
 import pandas as pd
-from psycopg import Connection, Cursor
+from psycopg import Cursor
 from pypika import PostgreSQLQuery
-from pypika import Query, Schema, Column, PostgreSQLQuery
+from pypika import Schema, Column, PostgreSQLQuery
 from dexxy.common.clients.tasks import Task
 from dexxy.common.clients.workflows import Pipeline
 from dexxy.common.clients.postgres import PostgresClient
 from typing import List
-import os
 
 ### Parameters
 databaseConfig = ".config\database.ini"
