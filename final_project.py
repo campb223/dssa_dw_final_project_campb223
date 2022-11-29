@@ -4,7 +4,7 @@ from pypika import PostgreSQLQuery
 from pypika import Schema, Column, PostgreSQLQuery
 from dexxy.common.clients.tasks import Task
 from dexxy.common.clients.workflows import Pipeline
-from dexxy.common.clients.postgres import PostgresClient
+from dexxy.database.postgres import PostgresClient
 from typing import List
 
 ### Parameters
