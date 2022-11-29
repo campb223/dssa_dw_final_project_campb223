@@ -4,7 +4,7 @@ from pypika import PostgreSQLQuery
 from pypika import Schema, Column, PostgreSQLQuery
 from dexxy.common.clients.tasks import Task
 from dexxy.common.clients.workflows import Pipeline
-from dexxy.database.postgres import PostgresClient
+from dexxy.database.postgres import connect, closeConnection
 from typing import List
 
 ### Parameters
@@ -67,11 +67,8 @@ DIM_DATE = (
 
 
 ### Functions
-def createCursor(path:str, section:str) -> Cursor:
-    client = PostgresClient()
-    connection = client.connect_from_config(path, section, autocommit=True)
-    cursor = connection.cursor()
-    return cursor
+def createCursor() -> Cursor:
+    return connect()
 
 def createSchema(cursor: Cursor, schemaName:str) -> Cursor:
     q = f"CREATE SCHEMA IF NOT EXISTS {schemaName};"
@@ -123,7 +120,7 @@ def sinkData(cursor: Cursor, df:pd.DataFrame, target:str):
     return 
 
 def tearDown(cursor: Cursor) -> None:
-    cursor.execute("DROP SCHEMA DSSA CASCADE;")
+    #cursor.execute("DROP SCHEMA DSSA CASCADE;")
     cursor.close()
     return
 

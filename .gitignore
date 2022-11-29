@@ -20,8 +20,8 @@ venv.bak/
 .ipynb_checkpoints
 
 # configs
-.config\.postgres
-.config/.postgres
+config\.postgres
+config/.postgres
 .dags/
 .DS_Store
 
