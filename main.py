@@ -141,7 +141,7 @@ def tearDown(cursor: Cursor) -> None:
         cursor (Cursor): A Cursor connection to the database that will be closed. 
     """
     #cursor.execute("DROP SCHEMA dw CASCADE;")
-    cursor._close()
+    cursor.close()
     return
     
 def createTable(cursor:Cursor, tableName:str, definition:tuple, primaryKey:str=None, foreignKeys:list=None, referenceTables:list=None) -> None: 
@@ -380,9 +380,19 @@ def buildFactRental(rental_df:pd.DataFrame,
     rental_df = rental_df[['sk_customer', 'sk_date', 'sk_store', 'sk_film', 'sk_staff', 'count_rentals']].copy()
     return rental_df
 
+def removeDW(cursor):
+    cursor.execute("DROP SCHEMA dw CASCADE;")
+    cursor.close()
+    return
 
 
 def main():
+    
+    #cursor = createCursor(databaseConfig, section)
+    #removeDW(cursor)
+    #return 
+    
+    
     
     initWorkflow = Pipeline(    
         steps=[

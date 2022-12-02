@@ -42,10 +42,6 @@ class Pipeline(DAG, LoggingStuff):
         # gets the last step from the pipeline dependency
         dep_task = dep.steps[-1]
 
-        # Validate task is compatible with the dependency
-        if not task.skipValidation:
-            task.validate(dep_task)
-
         # Update the task with uuids of related runs
         if dep.dag.nodes[dep_task.tid].get('tasks', None) is not None:
             for k in dep.dag.nodes[dep_task.tid]['tasks'].keys():
@@ -70,11 +66,6 @@ class Pipeline(DAG, LoggingStuff):
 
         task.dependsOn[idx] = dep_task
 
-        # Validate task is compatible with the dependency
-        if not task.skipValidation:
-            task.validate(dep_task)
-            self._log.info('Validation Check Complete for %s & %s' % (task.name, dep_task.name))
-
         # Lookup dependent task from the current pipeline or the called pipeline
         if dag.nodes[dep_task.tid].get('tasks', None) is not None:
             for k in dag.nodes[dep_task.tid]['tasks'].keys():
@@ -86,10 +77,6 @@ class Pipeline(DAG, LoggingStuff):
 
     def _proc_task_dep(self, task, dep, input_pipe):
         """Processes Dependencies that contain a subclass of a Task."""
-
-        # Validate task is compatible with the dependency
-        if not task.skipValidation:
-            task.validate(dep)
 
         # Lookup dependent task from the current pipeline
         pipe = self

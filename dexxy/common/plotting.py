@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import random
 import networkx as nx
 
-
 def topological_pos(G):
     """Display in topological order, with simple offsetting for legibility"""
     pos_dict = {}
