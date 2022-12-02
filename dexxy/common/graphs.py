@@ -1,20 +1,11 @@
-# *********
-# after topological sort you'll have sorted task of nodes. First task you pop off stack, is the first task you put in the queue
-
 from typing import Dict, List, Type
 from uuid import uuid4
-from dexxy.common.clients.exceptions import CircularDependencyError, MissingDependencyError
-from dexxy.common.clients.tasks import Task
-from networkx import (
-    MultiDiGraph,
-    compose,
-    is_directed_acyclic_graph,
-    is_weakly_connected,
-    number_of_nodes,
-    is_empty,
-    topological_sort
-)
+from dexxy.common.exceptions import CircularDependencyError, MissingDependencyError
+from dexxy.common.tasks import Task
+from networkx import (MultiDiGraph, compose, is_directed_acyclic_graph, is_weakly_connected, number_of_nodes, is_empty, topological_sort)
 
+# *********
+# after topological sort you'll have sorted task of nodes. First task you pop off stack, is the first task you put in the queue
 
 class DAG:
 

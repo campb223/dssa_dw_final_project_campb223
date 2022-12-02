@@ -1,15 +1,12 @@
-# Workers 15:00 in video
-
 import cloudpickle as cpickle
-from dexxy.common.clients.scheduler import DefaultScheduler
-from dexxy.common.clients.logger import LoggingStuff
-from dexxy.common.clients.graphs import DAG
-from dexxy.common.clients.queues import QueueWarehouse
-from dexxy.common.clients.tasks import Task, createTask
-from dexxy.common.executors.default import DefaultExecutor
-from dexxy.common.clients.exceptions import DependencyError, NotFoundError
+from dexxy.common.scheduler import DefaultScheduler
+from dexxy.common.logger import LoggingStuff
+from dexxy.common.graphs import DAG
+from dexxy.common.queues import QueueWarehouse
+from dexxy.common.tasks import Task, createTask
+from dexxy.common.executors import DefaultExecutor
+from dexxy.common.exceptions import DependencyError, NotFoundError
 from typing import Any, List, Literal, Tuple
-
 
 class Pipeline(DAG, LoggingStuff):
     """A Directed Acyclic MultiGraph based Pipeline for Data Processing. """

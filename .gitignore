@@ -1,8 +1,5 @@
 # Byte-compiled / optimized / DLL files
 __pycache__
-*.py[cod]
-*$py.class
-*.pyc
 database.ini
 
 # Environments
@@ -20,8 +17,6 @@ venv.bak/
 .ipynb_checkpoints
 
 # configs
-config\.postgres
-config/.postgres
-.dags/
-.DS_Store
+.postgres
+.postgres
 

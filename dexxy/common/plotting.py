@@ -202,7 +202,7 @@ def plot_dag(G, node_attr: str = 'tasks', attr: str = 'name', path: str = None, 
             edge_weight = nx.get_edge_attributes(G, 'pid')[edge]
             edge_label = {edge: f"pid:{edge_weight}"}
 
-            my_draw_networkx_edge_labels(G, pos, ax=ax, edge_labels=edge_label, rotate=True, rad=a * inv, font_size=8)
+            my_draw_networkx_edge_labels(G, pos, ax=ax, edge_labels=edge_label, rotate=True, rad=a * inv, font_size=7)
 
             curved_edges.append(edge)
             inv = inv * -1
@@ -214,7 +214,7 @@ def plot_dag(G, node_attr: str = 'tasks', attr: str = 'name', path: str = None, 
     # Draws the Edge Attributes as labels
     edge_weights = nx.get_edge_attributes(G, 'pid')
     straight_edge_labels = {edge: f"pid:{edge_weights[edge]}" for edge in straight_edges}
-    my_draw_networkx_edge_labels(G, pos, ax=ax, edge_labels=straight_edge_labels, rotate=True, font_size=8)
+    my_draw_networkx_edge_labels(G, pos, ax=ax, edge_labels=straight_edge_labels, rotate=True, font_size=7)
 
     plt.axis('off')
     plt.title("DAG Data Processing Pipeline", pad=0.5)

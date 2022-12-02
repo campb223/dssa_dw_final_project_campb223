@@ -1,21 +1,33 @@
-from dexxy.common.executors.base import BaseExecutor
-from dexxy.common.clients.logger import LoggingStuff
-from dexxy.common.clients.utils import getTaskResult
+from dexxy.common.logger import LoggingStuff
+from dexxy.common.utils import getTaskResult
+from dexxy.common.utils import generateUniqueID
 from typing import TypeVar
 
 Queue = TypeVar('Queue')
 
 class DefaultWorker(LoggingStuff):
+    """_summary_
+
+    Args:
+        LoggingStuff (_type_): _description_
+    """
     workerID = 0
     
     def __init__(self, taskQueue: Queue, resultQueue: Queue):
-        DefaultWorker.workerID += 1
+        """_summary_
+
+        Args:
+            taskQueue (Queue): _description_
+            resultQueue (Queue): _description_
+        """
+        #DefaultWorker.workerID += 1
+        self.workerID += 1
         self.taskQueue = taskQueue
         self.resultQueue = resultQueue
         self._log = self.logger
         
     def run(self): 
-        
+
         while not self.taskQueue.empty():
             
             _task = self.taskQueue.get()
@@ -39,15 +51,40 @@ class DefaultWorker(LoggingStuff):
             
             self.taskQueue.task_done()
             
-class DefaultExecutor(BaseExecutor):
+class DefaultExecutor(LoggingStuff):
+    """_summary_
+
+    Args:
+        LoggingStuff (_type_): _description_
+    """
+    
+    job_id = generateUniqueID()
+    
     def __init__(self, taskQueue, resultQueue):
-        super().__init__(taskQueue, resultQueue)
+        """_summary_
+
+        Args:
+            taskQueue (_type_): _description_
+            resultQueue (_type_): _description_
+        """
+        self.taskQueue = taskQueue
+        self.resultQueue = resultQueue
+        self._log = self.logger
         
     def start(self):
+        """_summary_
+
+        Returns:
+            _type_: _description_
+        """
+        # Starts workers for processing Tasks
         self._log.info('Starting Job %s' % self.job_id)
         self.worker = DefaultWorker(self.taskQueue, self.resultQueue)
         return self.worker.run()
         
     def end(self):
+        """_summary_
+        """
+        # Stops execution of Tasks
         del self.worker
         #del self.resultQueue
