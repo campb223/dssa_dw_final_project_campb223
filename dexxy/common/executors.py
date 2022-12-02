@@ -20,7 +20,7 @@ class DefaultWorker(LoggingStuff):
             taskQueue (Queue): _description_
             resultQueue (Queue): _description_
         """
-        #DefaultWorker.workerID += 1
+        DefaultWorker.workerID += 1
         self.workerID += 1
         self.taskQueue = taskQueue
         self.resultQueue = resultQueue

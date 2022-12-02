@@ -9,6 +9,7 @@ Pipeline = TypeVar('Pipeline')
 
 
 class Task(LoggingStuff):
+    
     def __init__( 
             self,
             func: Callable,
@@ -55,6 +56,9 @@ class Task(LoggingStuff):
     def __str__(self) -> str:
         from pprint import pprint
         s = dict()
+        s['Task'] = self.__dict__.copy()
+        s['Task']['input'] = self.__input__()
+        s['Task']['output'] = self.__output__()
         s['Activity'] = self.__dict__.copy()
         return str(pprint(s))
     

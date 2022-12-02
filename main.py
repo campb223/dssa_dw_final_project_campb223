@@ -3,10 +3,10 @@ from typing import List
 from psycopg import Cursor
 from pypika import PostgreSQLQuery
 from pypika import Schema, Column, PostgreSQLQuery
-from dexxy.database.postgres import PostgresClient
 from dexxy.common.tasks import Task
 from dexxy.common.workflows import Pipeline
 from dexxy.common.plotting import plot_dag
+from dexxy.database.postgres import PostgresClient
 
 
 ################## Parameters ###################
@@ -16,7 +16,7 @@ from dexxy.common.plotting import plot_dag
 
 databaseConfig = "config/database.ini"
 section = 'postgresql'
-dw = Schema('dssa')
+dw = Schema('dw')
 dvd = Schema('public')
 
 
@@ -79,8 +79,8 @@ DIM_DATE = (
 # These functions will be directly used in the ETL process to build a star schema. 
 # They're mostly for connecting to the database, grabbing table data, and writing table data. 
 
-def createCursor(path: str, section: str) -> Cursor:
-    """
+def createCursor(path:str, section:str) -> Cursor:
+    """ NEED TO COMBINE THESE
     This function uses the class generated in dexxy/database/postgres.py
     By passing the location to the database connection credentials and the database type, it will attempt to secure a conenction to the database and return the cursor (if succesful).
     
@@ -93,8 +93,19 @@ def createCursor(path: str, section: str) -> Cursor:
     Returns:
         Cursor: A cursor connection to the database which can be used to read data, write data, etc. 
     """
-    connection = PostgresClient().connectToDatabase(path, section)
-    return connection.cursor()
+    
+    """Creates a Database Cursor for sending commands
+    and queries to the connection instance
+    Args:
+        path (str): path to an ini file containing database params
+        section (str): section name in the ini file containing pararms
+    Returns:
+        Cursor: A Cursor instance
+    """
+    client = PostgresClient()
+    conn = client.connect_from_config(path, section, autocommit=True)
+    cursor = conn.cursor()
+    return cursor
 
 def setSearchPath(cursor: Cursor) -> None:
     """
@@ -103,7 +114,7 @@ def setSearchPath(cursor: Cursor) -> None:
     Args:
         cursor (Cursor): A Cursor connection to the database. This will be used to connect, then set the search path. 
     """
-    cursor.execute("SET search_path TO dvdrental, public;")
+    cursor.execute("SET search_path TO public;")
     return
 
 def createSchema(cursor: Cursor, schemaName: str) -> Cursor:
@@ -118,8 +129,8 @@ def createSchema(cursor: Cursor, schemaName: str) -> Cursor:
     Returns:
         Cursor: A Cursor connection to the database.
     """
-    execCom = f"CREATE SCHEMA IF NOT EXISTS {schemaName};"
-    cursor.execute(execCom)
+    q = f"CREATE SCHEMA IF NOT EXISTS {schemaName};"
+    cursor.execute(q)
     return cursor
 
 def tearDown(cursor: Cursor) -> None:
@@ -129,8 +140,8 @@ def tearDown(cursor: Cursor) -> None:
     Args:
         cursor (Cursor): A Cursor connection to the database that will be closed. 
     """
-    #cursor.execute("DROP SCHEMA DSSA CASCADE;")
-    cursor.close()
+    #cursor.execute("DROP SCHEMA dw CASCADE;")
+    cursor._close()
     return
     
 def createTable(cursor:Cursor, tableName:str, definition:tuple, primaryKey:str=None, foreignKeys:list=None, referenceTables:list=None) -> None: 
@@ -192,6 +203,7 @@ def readData(cursor:Cursor, tableName:str, columns:tuple) -> pd.DataFrame:
         col_names.append(names[0])
     
     df = pd.DataFrame(data, columns=col_names)
+    print(df)
     return df
 
 def loadData(cursor: Cursor, df:pd.DataFrame, target:str):
@@ -599,7 +611,7 @@ def main():
     
     # Optionally we can plot the DAG (this module needs work bewarned)
     #plot_dag(etl_workflow.dag, savefig=False, path='dag.png')
-    plot_dag(workflow.dag, savefig=True, path='dag.png')
+    #plot_dag(workflow.dag, savefig=True, path='dag.png')
     
     # Save the DAG so that it can be scheduled
     #workflow.dump(filename='dags/dvd_rental_workflow.pkl')
