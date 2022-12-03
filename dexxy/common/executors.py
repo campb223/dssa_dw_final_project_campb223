@@ -21,7 +21,7 @@ class DefaultWorker(LoggingStuff):
             resultQueue (Queue): _description_
         """
         DefaultWorker.workerID += 1
-        self.workerID += 1
+        self.workerID = DefaultWorker.workerID
         self.taskQueue = taskQueue
         self.resultQueue = resultQueue
         self._log = self.logger
@@ -87,4 +87,3 @@ class DefaultExecutor(LoggingStuff):
         """
         # Stops execution of Tasks
         del self.worker
-        #del self.resultQueue

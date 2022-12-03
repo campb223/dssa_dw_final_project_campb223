@@ -261,13 +261,7 @@ class Pipeline(DAG, LoggingStuff):
         executor.start()
         executor.end()
 
-    def submit(
-            self,
-            name: str,
-            trigger='interval',
-            minutes=1,
-            max_instances=1,
-            replace_existing=True) -> str:
+    def submit(self, name: str, trigger='interval', minutes=1, max_instances=1, replace_existing=True) -> str:
         """Submits DAG to the Scheduler"""
 
         if self.sched.state == 0:

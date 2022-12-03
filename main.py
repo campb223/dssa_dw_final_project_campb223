@@ -203,7 +203,6 @@ def readData(cursor:Cursor, tableName:str, columns:tuple) -> pd.DataFrame:
         col_names.append(names[0])
     
     df = pd.DataFrame(data, columns=col_names)
-    print(df)
     return df
 
 def loadData(cursor: Cursor, df:pd.DataFrame, target:str):
@@ -385,14 +384,15 @@ def removeDW(cursor):
     cursor.close()
     return
 
-
+def clearPastDBData():
+    cursor = createCursor(databaseConfig, section)
+    cursor.execute("DROP SCHEMA dw CASCADE;")
+    cursor.close()
+    
+    
 def main():
     
-    #cursor = createCursor(databaseConfig, section)
-    #removeDW(cursor)
-    #return 
-    
-    
+    clearPastDBData()
     
     initWorkflow = Pipeline(    
         steps=[

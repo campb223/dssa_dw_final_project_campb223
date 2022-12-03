@@ -2,12 +2,24 @@ from psycopg import connect, Connection
 from psycopg.conninfo import make_conninfo
 from configparser import ConfigParser
 
-
 class PostgresClient():
-    """Postgres client for working with postgres databases in python_
+    """
+    Postgres client for working with postgres databases in python
     """
 
     def __init__(self, host: str = None, port: int = None, user: str = None, password: str = None, dbname: str = None):
+        """
+        Initilization of an object in PostgresClient(). 
+        By default the host, port, user, password, and dbname are set to None
+        For additional information related to connecting to PostgreSQL DB's:
+            https://www.postgresqltutorial.com/postgresql-python/connect/
+        Args:
+            host (str, optional): Defaults to None.
+            port (int, optional): Defaults to None.
+            user (str, optional): Defaults to None.
+            password (str, optional): Defaults to None.
+            dbname (str, optional): Defaults to None.
+        """
         self.host = host
         self.port = port
         self.user = user
@@ -15,10 +27,18 @@ class PostgresClient():
         self.dbname = dbname
 
     def connect_from_config(self, path: str, section: str, **kwargs) -> Connection:
-        """Creates a psycopg3 Connection object from a configuration file
+        """
+        Method that takes in the path and section of where a local copy of database connection parameters are. Files of this type should be included in the .gitignore file to prevent
+        unauthorized credential access. The typical database.ini postgres file should look like:
+            [postgresql]
+            host=localhost
+            port=5432
+            database=suppliers
+            user=postgres
+            password=SecurePas$1
         Args:
-            path (str): path to configuration file
-            section (str): name of section in the configuration file
+            path (str): The filepath with database connection parameters. 
+            section (str): The file type to verify and read. 
         Returns:
             Connection: a new connection instance
         """
@@ -38,26 +58,23 @@ class PostgresClient():
             **kwargs
         )
 
-        # checks if the connection is ok, it will throw an error if it is bad
-        conn._check_connection_ok()
-
         return conn
 
     def connect(self, **kwargs) -> Connection:
-        """Creates a psycopg3 Connection object from connection parameters
-        passed as **kwargs. Alias for psycop3.connect()
+        """"
+        A method to provide the database login information and return the connection (if valid) to the database. 
+        Args:
+            connectionList (List): A list of the login credentials to the database. Should match the pattern of:
+                host=localhost
+                port=5432
+                database=suppliers
+                user=postgres
+                password=SecurePas$1
         Returns:
             Connection: a new connection instance
         """
-        conn = connect(
-            conninfo=make_conninfo(
-                host=self.host,
-                port=self.port,
-                user=self.user,
-                password=self.password,
-                dbname=self.dbname,
-                **kwargs)
-        )
+        
+        conn = connect(conninfo=make_conninfo(host=self.host, port=self.port, user=self.user, password=self.password, dbname=self.dbname, **kwargs))
 
         # checks if the connection is ok, it will throw an error if it is bad
         conn._check_connection_ok()
