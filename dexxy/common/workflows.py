@@ -4,7 +4,7 @@ from dexxy.common.logger import LoggingStuff
 from dexxy.common.graphs import DAG
 from dexxy.common.queues import QueueWarehouse
 from dexxy.common.tasks import Task, createTask
-from dexxy.common.executors import DefaultExecutor
+from dexxy.common.executors import Executor
 from dexxy.common.exceptions import DependencyError, NotFoundError
 from typing import Any, List, Literal, Tuple
 
@@ -26,6 +26,7 @@ class Pipeline(DAG, LoggingStuff):
         self._log = self.logger
         self.queue = QueueWarehouse.warehouse(type=type)
         self.sched = DefaultScheduler()
+        self._log.info('Built Pipeline %s' % self.pid)
 
     def _merge_dags(self, pipeline: "Pipeline") -> None:
         """Allow a Pipeline object to receive an other Pipeline object \
@@ -252,7 +253,7 @@ class Pipeline(DAG, LoggingStuff):
             self.collect()
 
         # Setup Default Executor
-        executor = DefaultExecutor(
+        executor = Executor(
             taskQueue=self.queue,
             resultQueue=self.result_queue)
 

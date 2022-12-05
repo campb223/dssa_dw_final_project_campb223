@@ -5,7 +5,7 @@ from typing import TypeVar
 
 Queue = TypeVar('Queue')
 
-class DefaultWorker(LoggingStuff):
+class Worker(LoggingStuff):
     """_summary_
 
     Args:
@@ -20,11 +20,12 @@ class DefaultWorker(LoggingStuff):
             taskQueue (Queue): _description_
             resultQueue (Queue): _description_
         """
-        DefaultWorker.workerID += 1
-        self.workerID = DefaultWorker.workerID
+        Worker.workerID += 1
+        self.workerID = Worker.workerID
         self.taskQueue = taskQueue
         self.resultQueue = resultQueue
         self._log = self.logger
+        self._log.info('Built Worker %s' % self.workerID)
         
     def run(self): 
 
@@ -51,7 +52,7 @@ class DefaultWorker(LoggingStuff):
             
             self.taskQueue.task_done()
             
-class DefaultExecutor(LoggingStuff):
+class Executor(LoggingStuff):
     """_summary_
 
     Args:
@@ -70,6 +71,7 @@ class DefaultExecutor(LoggingStuff):
         self.taskQueue = taskQueue
         self.resultQueue = resultQueue
         self._log = self.logger
+        self._log.info('Built Executor %s' % self.job_id)
         
     def start(self):
         """_summary_
@@ -79,7 +81,7 @@ class DefaultExecutor(LoggingStuff):
         """
         # Starts workers for processing Tasks
         self._log.info('Starting Job %s' % self.job_id)
-        self.worker = DefaultWorker(self.taskQueue, self.resultQueue)
+        self.worker = Worker(self.taskQueue, self.resultQueue)
         return self.worker.run()
         
     def end(self):

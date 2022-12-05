@@ -20,6 +20,8 @@ class Task(LoggingStuff):
         self.result = None
         self.tid = generateUniqueID()
         self._log = self.logger
+        self._log.info('Built Task %s' % self.name)
+        
         
     def _run(self, *args, **kwargs) -> Any:
         try:
