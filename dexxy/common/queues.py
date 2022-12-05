@@ -4,7 +4,7 @@ class QueueWarehouse:
     @staticmethod
     def warehouse(type: str ='default') -> ThreadSafeQueue:
         """
-        A "Queue Warehouse" that returns a queue which can be used to track the order of operation of Tasks/Pipelines. 
+        A "Queue Warehouse" that returns a queue which can be used to track the order of operation of Tasks/Pipelines/Workflows. 
         
         If no type is input then the default 'ThreadSafeQueue' type will be selected. 
         

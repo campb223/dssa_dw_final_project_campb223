@@ -2,10 +2,7 @@ from typing import Dict, List, Type
 from uuid import uuid4
 from dexxy.common.exceptions import CircularDependencyError, MissingDependencyError
 from dexxy.common.tasks import Task
-from networkx import (MultiDiGraph, compose, is_directed_acyclic_graph, is_weakly_connected, number_of_nodes, is_empty, topological_sort)
-
-# *********
-# after topological sort you'll have sorted task of nodes. First task you pop off stack, is the first task you put in the queue
+from networkx import MultiDiGraph, compose, is_directed_acyclic_graph, is_weakly_connected, number_of_nodes, is_empty, topological_sort
 
 class DAG:
 
@@ -23,11 +20,11 @@ class DAG:
         """
 
         # Validate DAG does not have cycles
-        if not self.is_dag():
+        if not is_directed_acyclic_graph(self.dag):
             raise CircularDependencyError("DAG Contains Cycles, Check Steps for Circular Dependencies")
 
         # Validate DAG does not have weakly connected nodes
-        if not self.is_weakly_connected():
+        if not is_weakly_connected(self.dag):
             raise MissingDependencyError("DAG Contains Weakly Connected Nodes, Check Steps for Missing Dependencies")
 
     def merge(self, G: MultiDiGraph, H: MultiDiGraph) -> MultiDiGraph:
@@ -43,10 +40,10 @@ class DAG:
         """
         return compose(G, H)
 
-    def add_node_to_dag(self,
-                        task: Type[Task] = None,
-                        properties: Dict = None) -> None:
-        """Adds a new Node to the DAG with attributes
+    def add_node_to_dag(self, task: Type[Task] = None, properties: Dict = None) -> None:
+        """
+        Adds a new Node to the DAG with attributes
+        
         Args:
             task (Type[Task], optional): Task Instance. Defaults to None.
             properties (Dict, optional): User Properties. Defaults to None.
@@ -62,47 +59,19 @@ class DAG:
         else:
             updates = {task.tid: task}
         # Add a new node to the DAG
-        self.dag.add_nodes_from([
-            (
-                task.tid, {
-                    "id": task.tid,
-                    "tasks": updates,
-                    "properties": properties
-                }
-            )
-        ])
+        self.dag.add_nodes_from([(task.tid, {"id": task.tid, "tasks": updates, "properties": properties})])
 
-    def add_edge_to_dag(
-            self,
-            pid: int,
-            tid_from: int,
-            tid_to: int,
-            activity_id: uuid4) -> None:
-        """Adds an edge between two nodes to the DAG
+    def add_edge_to_dag(self, pid: int, tid_from: int, tid_to: int, activity_id: uuid4) -> None:
+        """
+        Adds an edge between two nodes to the DAG
+        
         Args:
             tid_from (int): The dependency Task unique ID "tid"
             tid_to (int): The Task unique ID "tid"
             activity_id (uuid): Task Id used to define the edge
         """
         # Add the edge to the DAG
-        self.dag.add_edges_from([
-            (
-                tid_from, tid_to, activity_id, {
-                    "pid": pid,
-                    "tid_from": tid_from,
-                    "tid_to": tid_to,
-                }
-            )
-        ])
-
-    def is_dag(self) -> bool:
-        """Validates all edges are directed and no cycles exist within the DAG"""
-        # Checks that graph is a DAG
-        return is_directed_acyclic_graph(G=self.dag)
-
-    def is_weakly_connected(self) -> bool:
-        """Validates all edges and nodes are"""
-        return is_weakly_connected(G=self.dag)
+        self.dag.add_edges_from([(tid_from, tid_to, activity_id, {"pid": pid, "tid_from": tid_from, "tid_to": tid_to,})])
 
     def is_empty(self) -> bool:
         """Returns True if DAG is empty"""
@@ -158,23 +127,26 @@ class DAG:
         return list(self.dag.predecessors(n))
 
     def get_successors(self, n) -> List:
-        """Returns a list of all successors of a node, \
-        such that there exists a directed edge from m to n
+        """Returns a list of all successors of a node, such that there exists a directed edge from m to n
+        
         Args:
             n (node): A node in the DAG
+        
         Returns:
             List: list of predecessors
         """
         return list(self.dag.successors(n))
 
     def repair_attributes(self, G: MultiDiGraph, H: MultiDiGraph, attr: str) -> None:
-        """Preserved node attributes that may be overwritten when using merge.
-        Note: this method only works if the attribute being preserved is a dictionary
+        """
+        Preserved node attributes that may be overwritten when using merge. Note: this method only works if the attribute being preserved is a dictionary
+        
         Args:
             G (MultiDiGraph): left graph
             H (MultiDiGraph): right graph
             attr (str): name of attribute
         """
+        
         for node in G.nodes():
             if node in H:
                 if self.dag.nodes[node].get(attr, None) is not None:

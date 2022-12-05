@@ -106,6 +106,7 @@ def createCursor(path:str, section:str) -> Cursor:
     conn = client.connect_from_config(path, section, autocommit=True)
     cursor = conn.cursor()
     return cursor
+cursor = createCursor(databaseConfig, section)
 
 def setSearchPath(cursor: Cursor) -> None:
     """
@@ -133,14 +134,13 @@ def createSchema(cursor: Cursor, schemaName: str) -> Cursor:
     cursor.execute(q)
     return cursor
 
-def tearDown(cursor: Cursor) -> None:
+def tearDown(cursor: Cursor, *args, **kwargs) -> None:
     """
     Closes the connection to the database. 
 
     Args:
         cursor (Cursor): A Cursor connection to the database that will be closed. 
     """
-    #cursor.execute("DROP SCHEMA dw CASCADE;")
     cursor.close()
     return
     
@@ -178,7 +178,7 @@ def createTable(cursor:Cursor, tableName:str, definition:tuple, primaryKey:str=N
     cursor.execute(ddl)
     return     
     
-def readData(cursor:Cursor, tableName:str, columns:tuple) -> pd.DataFrame:
+def readData(tableName:str, columns:tuple) -> pd.DataFrame:
     """
     Executes a query to selects Columns and rows from a Table using a cursor 
     
@@ -203,10 +203,9 @@ def readData(cursor:Cursor, tableName:str, columns:tuple) -> pd.DataFrame:
         col_names.append(names[0])
     
     df = pd.DataFrame(data, columns=col_names)
-    print(df)
     return df
 
-def loadData(cursor: Cursor, df:pd.DataFrame, target:str):
+def loadData(df:pd.DataFrame, target:str):
     """
     Writes data to a table from a pandas dataframe
     
@@ -223,7 +222,7 @@ def loadData(cursor: Cursor, df:pd.DataFrame, target:str):
     cursor.execute(query)
     return 
 
-def buildDimCustomer(cust_df:pd.DataFrame) -> pd.DataFrame:
+def buildDimCustomer(cust_df:pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
     """
     constructs the customer dimension object
     
@@ -240,7 +239,7 @@ def buildDimCustomer(cust_df:pd.DataFrame) -> pd.DataFrame:
     dim_customer.drop_duplicates(inplace=True)
     return dim_customer
     
-def buildDimStaff(staff_df:pd.DataFrame) -> pd.DataFrame:
+def buildDimStaff(staff_df:pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
     """
     constructs the staff dimension object
     
@@ -257,7 +256,7 @@ def buildDimStaff(staff_df:pd.DataFrame) -> pd.DataFrame:
     dim_staff.drop_duplicates(inplace=True)
     return dim_staff
     
-def buildDimDates(dates_df:pd.DataFrame) -> pd.DataFrame:
+def buildDimDates(dates_df:pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
     """
     constructs the dates dimension table
     
@@ -284,7 +283,7 @@ def buildDimStore(store_df:pd.DataFrame,
     staff_df:pd.DataFrame, 
     address_df:pd.DataFrame,
     city_df:pd.DataFrame,
-    country_df:pd.DataFrame) -> pd.DataFrame:
+    country_df:pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
     """
     constructs the store dimension table
     
@@ -299,7 +298,7 @@ def buildDimStore(store_df:pd.DataFrame,
         pd.DataFrame: store dimension object as a pandas dataframe
     """
     
-    staff_df.rename(columns={'manager_staff_id':'staff_id'}, inplace=True)
+    staff_df.rename(columns={'sk_staff':'staff_id'}, inplace=True)
     staff_df['name'] = staff_df.first_name + " " + staff_df.last_name
     staff_df = staff_df[['staff_id', 'name']].copy()
     
@@ -318,7 +317,7 @@ def buildDimStore(store_df:pd.DataFrame,
     store_df = store_df[['sk_store', 'name', 'address', 'city', 'state', 'country']].copy()
     return store_df
 
-def buildDimFilm(film_df:pd.DataFrame, lang_df:pd.DataFrame) -> pd.DataFrame:
+def buildDimFilm(film_df:pd.DataFrame, lang_df:pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
     """
     constructs the film dimension table
     
@@ -349,7 +348,7 @@ def buildFactRental(rental_df:pd.DataFrame,
     date_df:pd.DataFrame,
     film_df:pd.DataFrame,
     staff_df:pd.DataFrame,
-    store_df:pd.DataFrame) -> pd.DataFrame:
+    store_df:pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
     """
     _summary_
     
@@ -380,24 +379,23 @@ def buildFactRental(rental_df:pd.DataFrame,
     rental_df = rental_df[['sk_customer', 'sk_date', 'sk_store', 'sk_film', 'sk_staff', 'count_rentals']].copy()
     return rental_df
 
-def removeDW(cursor):
+def clearPastDBData():
+    cursor = createCursor(databaseConfig, section)
     cursor.execute("DROP SCHEMA dw CASCADE;")
     cursor.close()
-    return
-
-
+    
+    
 def main():
+    try:
+        clearPastDBData()
+    except:
+        print('table must not have previously existed.')
     
-    #cursor = createCursor(databaseConfig, section)
-    #removeDW(cursor)
-    #return 
-    
-    
-    
-    initWorkflow = Pipeline(    
+    # Creates a DAG for setting up the connection to the DB, building tables, and building relationships. 
+    setup = Pipeline(
         steps=[
             Task(createCursor,
-                 kwargs={'path': databaseConfig, 'section': section},
+                kwargs={'path': databaseConfig, 'section': section},
                 dependsOn=None,
                 name='createCursor'),
             Task(createSchema,
@@ -429,174 +427,145 @@ def main():
                     'tableName': dw.factRental, 'definition':FACT_RENTAL,
                     'foreignKeys': ['sk_customer', 'sk_store', 'sk_film', 'sk_staff', 'sk_date'],
                     'referenceTables': [dw.customer, dw.store, dw.film, dw.staff, dw.date]},
-                dependsOn=['createSchema'],
+                dependsOn=['createSchema', 'createDimCustomer', 'createDimStore',  'createDimFilm', 'createDimStaff', 'createDimDate'],
                 name='createFactRentals')
         ],
-        type='default'
     )
     
-    # Creates a DAG for extract, transform, and load to dim Customer
-    cust_workflow = Pipeline(
+    # Creates a DAG for extracting the information from the existing DB. 
+    extract = Pipeline(
         steps=[
             Task(readData,
-                 kwargs={'tableName': dvd.customer,'columns': ('customer_id', 'first_name', 'last_name', 'email')},
-                 dependsOn=['createCursor'],
-                 name='extractCust'
-                 ),
-            Task(buildDimCustomer,
-                 dependsOn=['extractCust'],
-                 name='transfCust'
-                 ),
-            Task(loadData,
-                 dependsOn=['createCursor','transfCust', 'createDimCustomer'],
-                 kwargs={'target': dw.customer},
-                 name='loadCustomer',
-                 skipValidation=True
-                 )
-            ]
-        )
-    
-    # Creates a DAG for extract, transform, and load to dim Staff
-    staff_workflow = Pipeline(
-        steps=[
+                kwargs={'tableName': dvd.customer,'columns': ('customer_id', 'first_name', 'last_name', 'email')},
+                dependsOn=['createFactRentals'],
+                name='extractCustomer'
+                ),
             Task(readData,
                 kwargs={'tableName': dvd.staff,'columns': ('staff_id', 'first_name', 'last_name', 'email')},
-                dependsOn=['createCursor'],
+                dependsOn=['createFactRentals'],
                 name='extractStaff'
                 ),
-            Task(buildDimStaff,
-                 dependsOn=['extractStaff'],
-                 name='transfStaff'
-                 ),
-            Task(loadData,
-                 dependsOn=['createCursor','transfStaff', 'createDimStaff'],
-                 kwargs={'target': dw.staff},
-                 name='loadStaff',
-                 skipValidation=True
-                 )
-            ]
-        )
-    
-    # Creates a DAG for extract, transform, and load to dim Dates
-    dates_workflow = Pipeline(
-        steps=[
             Task(readData,
-                 kwargs={'tableName': dvd.rental,'columns': ('rental_id', 'rental_date', 'inventory_id', 'staff_id', 'customer_id')},
-                 dependsOn=['createCursor'],
-                 name='extractDates'
-                 ),
-            Task(buildDimDates,
-                 dependsOn=['extractDates'],
-                 name='transfDates'
-                 ),
-            Task(loadData,
-                 dependsOn=['createCursor','transfDates', 'createDimDate'],
-                 kwargs={'target': dw.date},
-                 name='loadDates',
-                 skipValidation=True
-                 ),
-            ]
-        )
-
-    # Creates a DAG for extract, transform, and load to dim Store
-    store_workflow = Pipeline(
-        steps=[
+                kwargs={'tableName': dvd.rental,'columns': ('rental_id', 'rental_date', 'inventory_id', 'staff_id', 'customer_id')},
+                dependsOn=['createFactRentals'],
+                name='extractDates'
+                ),
             Task(readData,
-                 kwargs={'tableName': dvd.store,'columns': ('store_id','manager_staff_id', 'address_id')},
-                 dependsOn=['createCursor'],
-                 name='extractStore'
-                 ),
+                kwargs={'tableName': dvd.address,'columns': ('address_id','address', 'city_id', 'district')},
+                dependsOn=['createFactRentals'],
+                name='extractAddress'
+                ),
             Task(readData,
-                 kwargs={'tableName': dvd.address,'columns': ('address_id','address', 'city_id', 'district')},
-                 dependsOn=['createCursor'],
-                 name='extractAddress'
-                 ),
+                kwargs={'tableName': dvd.city,'columns': ('city_id','city', 'country_id')},
+                dependsOn=['createFactRentals'],
+                name='extractCity'
+                ),
             Task(readData,
-                 kwargs={'tableName': dvd.city,'columns': ('city_id','city', 'country_id')},
-                 dependsOn=['createCursor'],
-                 name='extractCity'
-                 ),
+                kwargs={'tableName': dvd.country,'columns': ('country_id','country')},
+                dependsOn=['createFactRentals'],
+                name='extractCountry'
+                ),
             Task(readData,
-                 kwargs={'tableName': dvd.country,'columns': ('country_id','country')},
-                 dependsOn=['createCursor'],
-                 name='extractCountry'
-                 ),
-            Task(buildDimStore,
-                 dependsOn=['extractStore', 'extractStaff', 'extractAddress', 'extractCity', 'extractCountry'],
-                 name='transfStore'
-                 ),
-            Task(loadData,
-                 dependsOn=['createCursor','transfStore', 'createDimStore'],
-                 kwargs={'target': dw.store},
-                 name='loadStore',
-                 skipValidation=True
-                 ),
-            ]
-        )
-    
-    # Creates a DAG for extract, transform, and load to dim Film
-    film_workflow = Pipeline(
-        steps=[
+                kwargs={'tableName': dvd.store,'columns': ('store_id','manager_staff_id', 'address_id')},
+                dependsOn=['createFactRentals'],
+                name='extractStore'
+                ),
             Task(readData,
-                kwargs={'tableName': dvd.film,'columns': (
-                    'film_id', 'rating', 'length', 'rental_duration', 'language_id','release_year', 'title')},
-                dependsOn=['createCursor'],
+                kwargs={'tableName': dvd.film,'columns': ('film_id', 'rating', 'length', 'rental_duration', 'language_id','release_year', 'title')},
+                dependsOn=['createFactRentals'],
                 name='extractFilm'
                 ),
             Task(readData,
                 kwargs={'tableName': dvd.language,'columns': ('language_id', 'name')},
-                dependsOn=['createCursor'],
+                dependsOn=['createFactRentals'],
                 name='extractLanguage'
                 ),
-            Task(buildDimFilm,
-                 dependsOn=['extractFilm', 'extractLanguage'],
-                 name='transfFilm'
-                 ),
-            Task(loadData,
-                 dependsOn=['createCursor','transfFilm', 'createDimFilm'],
-                 kwargs={'target': dw.film},
-                 name='loadFilm',
-                 skipValidation=True
-                 )
-        ]
-    )
-    
-    # Creates a DAG for extract, transform, and load to Fact Rental
-    fact_workflow = Pipeline(
-        steps=[
             Task(readData,
                 kwargs={'tableName': dvd.inventory,'columns': ('inventory_id', 'film_id', 'store_id')},
-                dependsOn=['createCursor'],
+                dependsOn=['createFactRentals'],
                 name='extractInventory'
-                ),
-            Task(buildFactRental,
-                 dependsOn=['extractDates', 'extractInventory', 'transfDates', 'transfFilm', 'transfStaff', 'transfStore'],
-                 name='transfFactRental'
-                 ),
-            Task(loadData,
-                 dependsOn=['createCursor','transfFactRental', 'createFactRentals'],
-                 kwargs={'target': dw.factRental},
-                 name='loadFactRental',
-                 skipValidation=True
-                 )
+                )
         ]
     )
     
+    transform = Pipeline(
+        steps=[
+            Task(buildDimCustomer,
+                dependsOn=['extractCustomer'],
+                name='transformCustomer'
+                ),
+            Task(buildDimStaff,
+                dependsOn=['extractStaff', 'transformCustomer'],
+                name='transformStaff'
+                ),
+            Task(buildDimDates,
+                dependsOn=['extractDates', 'transformStaff'],
+                name='transformDates'
+                ),
+            Task(buildDimFilm,
+                dependsOn=['extractFilm', 'extractLanguage', 'transformDates'],
+                name='transformFilm'
+                ),
+            Task(buildDimStore,
+                dependsOn=['extractStore', 'extractStaff', 'extractAddress', 'extractCity', 'extractCountry', 'transformFilm'],
+                name='transformStore'
+                ),
+            Task(buildFactRental,
+                dependsOn=['extractDates', 'extractInventory', 'transformDates', 'transformFilm', 'transformStaff', 'transformStore'],
+                name='transformFactRental'
+                ),
+            
+        ]
+    )
+    
+    load = Pipeline(
+        steps=[
+            Task(loadData,
+                dependsOn=['transformCustomer'],
+                kwargs={'target': dw.customer},
+                name='loadCustomer'
+                ),
+            Task(loadData,
+                dependsOn=['transformStaff'],
+                kwargs={'target': dw.staff},
+                name='loadStaff'
+                ),
+            Task(loadData,
+                dependsOn=['transformDates'],
+                kwargs={'target': dw.date},
+                name='loadDates'
+                ),
+            Task(loadData,
+                dependsOn=['transformStore'],
+                kwargs={'target': dw.store},
+                name='loadStore'
+                ),
+            Task(loadData,
+                dependsOn=['transformFilm'],
+                kwargs={'target': dw.film},
+                name='loadFilm'
+                ),
+            Task(loadData,
+                dependsOn=['transformFactRental', 'loadFilm', 'loadStore', 'loadDates', 'loadStaff', 'loadCustomer'],
+                kwargs={'target': dw.factRental},
+                name='loadFactRental'
+                )
+        ]
+    )
+
     # Creates a DAG for tear down tasks and closing out any open connections to the database
-    teardown_workflow = Pipeline(
+    teardown = Pipeline(
         steps =[
             Task(tearDown,
                 dependsOn= [
-                    'createCursor', 
-                    film_workflow, 
-                    store_workflow, 
-                    dates_workflow, 
-                    staff_workflow, 
-                    cust_workflow, 
-                    fact_workflow
+                    'createCursor',
+                    setup,
+                    extract,
+                    transform,
+                    load
                     ],
                 name='tearDown',
-                skipValidation=True)
+            )
             ]
         )
     
@@ -604,14 +573,11 @@ def main():
     # We merge all the above Pipelines into a single Pipeline containing all Tasks to be added to the DAG.
     workflow = Pipeline(
         steps=[
-            initWorkflow,
-            cust_workflow,
-            staff_workflow,
-            dates_workflow,
-            store_workflow,
-            film_workflow,
-            fact_workflow,
-            teardown_workflow
+            setup,
+            extract,
+            transform,
+            load,
+            teardown
         ]
     )
     

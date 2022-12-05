@@ -1,7 +1,7 @@
 # DSSA 5102 Final Project
 
 ## Introduction
-The intent of this project to implement an ETL (extract, transform, and load) pipeline from a database (DVD Rental) into a data warehouse. There are times when a linear data processing pipeline would be sufficient, however, we love a challenge so we must implement this as a DAG (Directed Acyclic Graph)
+The intent of this project to implement an ETL (extract, transform, and load) pipeline from a database (dvdrental) into a data warehouse. There are times when a linear data processing pipeline would be sufficient, however, we love a challenge so we must implement this as a DAG (Directed Acyclic Graph)
 <br>
 <br>
 ### Objectives
@@ -9,7 +9,7 @@ The main objective of this is to implement an ETL process in python to create a 
 <br>
 <br>
 There are a few processes that need to take place to create this model. The general process looks like:
-    - Connect to the existing database - DVD Rental
+    - Connect to the existing database - dvdrental
     - Extract data from the database
     - Transform the data into the necessary variable types
     - Load the data into the Data Warehouse (dw)
@@ -59,19 +59,20 @@ There are a few processes that need to take place to create this model. The gene
 
 ## How The Project Is Organized:
 ### Project Structure
-*   `.config` - This folder contains configuration files. Included is a sample `database.ini` to show how to connect to a PostreSQL server. 
+*   `config` - This folder contains configuration files. Included is a sample `database.ini` to show how to connect to a PostreSQL server. 
+*   `dags` - Within this folder will be DAGs that can be run on a schedule.
 *   `dexxy` - This is the source code folder containing all application code and modules. 
-*   `docs` - Documentation about the source code. 
 *   `Provided Materials` - These were the documents provided to us during the project.  
+*   `Samples` - Genearl bits about how to use tasks, pipelines, etc. 
 *   `.gitignore` - In this file, you can include any code, folders, config files, etc. that you do NOT want uploaded to github. (Think of files like database.ini that include connection passwords.) 
 *   `LICENSE` - Open source GNU license markdown 
-*   `README` - Markdown file describing the project, objetives, and how to use.  
+*   `README` - General overview of the project objective, structure, etc.  
 *   `requirements.txt` - list of python libraries to install with `pip`. These are necessary for code execution.  
 
 ## How Did I Develop My Python Modules? 
 `Tasks` - 
 <br>
-`Queue` - 
+`Queue` -  A First In - First Out (FIFO) design pattern. My Queue is called a `warehouse`. Currently there is only one type that is initiated -- Default = ThreadSafeQueue
 <br>
 `Scheduler` - 
 <br>
@@ -84,5 +85,79 @@ There are a few processes that need to take place to create this model. The gene
 `Workflow` - 
 <br>
 <br>
-## How Should You Organize your `main.py` 
+## How To Organize `main.py` 
+*   As always in Python list your imports at the top of the file. 
+*   Next list your connection parameters
+*   Define your table definitions
+*   Define your functions for building tables, reading data, loading data, etc. 
+*   Then inside main setup your Pipelines/Tasks for connecting to the DB, extracting, transforming, loading, and teardown. 
+*   Lastly in main; Compose, Enqueue, and Exectute. 
 
+When you put it all together it should look something like this:
+
+```
+import pandas as pd
+
+################## Parameters ###################
+databaseConfig = "config/database.ini"
+section = 'postgresql'
+dw = Schema('dw')
+dvd = Schema('public')
+
+############## Table Definitions ################
+FACT_RENTAL = (
+    Column('sk_customer', 'INT', False),
+    Column('sk_date', 'INT', False),
+    Column('sk_store', 'INT', False),
+    Column('sk_film', 'INT', False),
+    Column('sk_staff', 'INT', False),
+    Column('count_rentals', 'INT', False)
+)
+
+################### Functions ####################
+def createCursor(path:str, section:str) -> Cursor:
+    client = PostgresClient()
+    conn = client.connect_from_config(path, section, autocommit=True)
+    cursor = conn.cursor()
+    return cursor
+
+def main():
+    setup = Pipeline(
+        steps=[
+            Task(createCursor,
+                kwargs={'path': databaseConfig, 'section': section},
+                dependsOn=None,
+                name='createCursor'),
+        ],
+        type='default'
+    )
+
+    teardown = Pipeline(
+        steps =[
+            Task(tearDown,
+                dependsOn= [
+                    'createCursor',
+                name='tearDown',
+                skipValidation=True)
+            ]
+        )
+
+    workflow = Pipeline(
+        steps=[
+            setup,
+            extract,
+            transform,
+            load,
+            teardown
+        ]
+    )
+
+     # ============================ COMPILATION ============================ #
+    workflow.compose()
+
+    # ============================ ENQUEUE ============================ #
+    workflow.collect()
+
+    # ============================ EXECUTION ============================ #
+    workflow.run()
+```

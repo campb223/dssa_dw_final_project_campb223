@@ -25,11 +25,8 @@ def getTaskResult(task) -> Tuple[Any]:
     """
     Takes in a node in the Task with a list of UUIDs to lookup. Then looks up the data required to run a task using the provided list of UUIDs. 
 
-    Args:
-        task (Task): _description_
-
     Returns:
-        Tuple[Any]: _description_
+        Tuple[Any]: Returns the outputs from the Tasks func call. Could be a cursor, df, etc. 
     """
     
     inputs = []
