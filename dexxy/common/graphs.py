@@ -59,15 +59,7 @@ class DAG:
         else:
             updates = {task.tid: task}
         # Add a new node to the DAG
-        self.dag.add_nodes_from([
-            (
-                task.tid, {
-                    "id": task.tid,
-                    "tasks": updates,
-                    "properties": properties
-                }
-            )
-        ])
+        self.dag.add_nodes_from([(task.tid, {"id": task.tid, "tasks": updates, "properties": properties})])
 
     def add_edge_to_dag(self, pid: int, tid_from: int, tid_to: int, activity_id: uuid4) -> None:
         """
@@ -79,15 +71,7 @@ class DAG:
             activity_id (uuid): Task Id used to define the edge
         """
         # Add the edge to the DAG
-        self.dag.add_edges_from([
-            (
-                tid_from, tid_to, activity_id, {
-                    "pid": pid,
-                    "tid_from": tid_from,
-                    "tid_to": tid_to,
-                }
-            )
-        ])
+        self.dag.add_edges_from([(tid_from, tid_to, activity_id, {"pid": pid, "tid_from": tid_from, "tid_to": tid_to,})])
 
     def is_empty(self) -> bool:
         """Returns True if DAG is empty"""

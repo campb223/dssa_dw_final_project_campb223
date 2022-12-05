@@ -13,7 +13,7 @@ class Pipeline(DAG, LoggingStuff):
 
     pipeline_id = 0
 
-    def __init__(self, steps: List[Task] = [], type: Literal['default', 'asyncio', 'multi-threading', 'multi-processing'] = 'default'):
+    def __init__(self, steps: List[Task] = [], type: Literal['default'] = 'default'):
 
         Pipeline.pipeline_id += 1
         super().__init__()
@@ -27,10 +27,10 @@ class Pipeline(DAG, LoggingStuff):
 
     def _merge_dags(self, pipeline: "Pipeline") -> None:
         """
-        Allow a Pipeline object to receive an other Pipeline object by merging two Graphs together and preserving attributes.
+        Allow a Pipeline object to receive another Pipeline object by merging two Graphs together and preserving attributes.
 
         Args:
-            pipeline (Pipeline): _description_
+            pipeline (Pipeline): A Pipeline object that contains Task(s). 
         """
         
         pipeline.compose(self)
@@ -121,14 +121,14 @@ class Pipeline(DAG, LoggingStuff):
     def dump(self, filename: str, protocol: str = None):
         """Serializes a DAG using cloudpickle
         Args:
-            filename (str): name of file to write steam to.
+            filename (str): name of file to write to.
             protocol (str, optional): protocol defaults to cloudpickle.DEFAULT_PROTOCOL  \
                 which is an alias to pickle.HIGHEST_PROTOCOL.
         Usage:
-        >>> filename = 'my_dag.pkl' # filename to use to serialize DAG
-        >>> pipe = Pipeline(steps=my_steps) # create new pipeline instance with steps
-        >>> pipe.compose() # compose a DAG from steps
-        >>> pipe.dump(filename) # save the DAG
+        #>>> filename = 'my_dag.pkl' # filename to use to serialize DAG
+        #>>> pipe = Pipeline(steps=my_steps) # create new pipeline instance with steps
+        #>>> pipe.compose() # compose a DAG from steps
+        #>>> pipe.dump(filename) # save the DAG
         """
 
         with open(filename, 'wb') as f:
@@ -160,31 +160,6 @@ class Pipeline(DAG, LoggingStuff):
             self.dag = dag
         return self
 
-    def loads(self, filename: str):
-        """loads a DAG to a pipeline instance
-        Args:
-            filename (str): filename of the pickled DAG
-        Usage:
-        >>> filename = 'my_dag.pkl' # filename to pickled dag file
-        >>> new_pipe = Pipeline() # create new pipeline instance
-        >>> new_pipe.load(filename) # load the dag to the pipeline instance
-        >>> new_pipe.run() # run the pipeline
-        """
-
-        with open(filename, 'rb') as f:
-            dag = cpickle.loads(f)
-            self.dag = dag
-        return self
-
-    def print_plan(self):
-        """Pretty Prints the DAG in Queue Processing Order"""
-
-        from pprint import pformat
-
-        nodes = self.get_all_nodes().copy()
-        index_map = {v: i for i, v in enumerate(self.topological_sort())}
-        return pformat(dict(sorted(nodes.items(), key=lambda pair: index_map[pair[0]])), compact=True, width=41)
-
     def get_task_by_name(self, name: str) -> Task:
         """Retrieves an Task from the DAG using its name
         Args:
@@ -215,16 +190,7 @@ class Pipeline(DAG, LoggingStuff):
 
             # Process the dependencies
             if task.dependsOn is not None:
-                # Sanity check what was provided as a dependency
-                assert isinstance(task.dependsOn, List), TypeError(
-                    f'Dependencies for Task: {task.name} must be a list.')
-                assert len(task.dependsOn) >= 1, ValueError(
-                    f"No Dependencies Provided for Task: {task.name}")
-
                 for idx, dep_task in enumerate(task.dependsOn):
-                    assert task != dep_task, DependencyError(f'{task} cannot be \
-                        both the active task and dependency')
-
                     # Process the dependency
                     task, dep_task = self._process_dep(idx, task, dep_task, input_pipe)
 
@@ -266,9 +232,7 @@ class Pipeline(DAG, LoggingStuff):
             self.collect()
 
         # Setup Default Executor
-        executor = Executor(
-            taskQueue=self.queue,
-            resultQueue=self.result_queue)
+        executor = Executor(taskQueue=self.queue, resultQueue=self.result_queue)
 
         # Start execution of Tasks
         self._log.info('Starting Execution')

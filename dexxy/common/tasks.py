@@ -7,7 +7,7 @@ Pipeline = TypeVar('Pipeline')
 
 class Task(LoggingStuff):
     
-    def __init__(self, func: Callable, kwargs: dict = {}, dependsOn: List = None, skipValidation: bool = False, name: str = None, desc: str = None) -> None:
+    def __init__(self, func: Callable, kwargs: dict = {}, dependsOn: List = None, name: str = None, desc: str = None) -> None:
         """
         Initalization of the class Task. During inilization it will look like:
             Task(createCursor,
@@ -22,7 +22,6 @@ class Task(LoggingStuff):
             func (Callable): The function to call when operating on this Task. 
             kwargs (dict, optional): This is the input paramters to the specified function. Defaults to {}.
             dependsOn (List, optional): List of other Tasks this is dependent on to execute. Defaults to None.
-            skipValidation (bool, optional): If you would like to validate input/output types, this would need to be True. Defaults to False.
             name (str, optional): Name of the Task. Defaults to None.
             desc (str, optional): Description of the Task. Defaults to None.
         """
@@ -30,7 +29,6 @@ class Task(LoggingStuff):
         self.func = func
         self.kwargs = kwargs
         self.dependsOn = dependsOn
-        self.skipValidation = skipValidation
         self.name = name
         self.desc = desc
         self.status = "Not Started"
@@ -39,19 +37,6 @@ class Task(LoggingStuff):
         self.tid = generateUniqueID()
         self._log = self.logger
         self._log.info('Built Task %s' % self.name)
-        
-        
-    def _run(self, *args, **kwargs) -> Any:
-        """
-        A function that runs the func with kwargs specificed in the Task
-
-        Returns:
-            Any: If there is a df, list, etc. to return by the specific function, it will return this. 
-        """
-        try:
-            return self.func(*args, **kwargs)
-        except Exception as error:
-            self._log.exception(error, exc_info=True, stack_info=True)
     
     def updateStatus(self, status: Literal['Not Started', 'Queued', 'Running', 'Completed', 'Failed'] = 'Not Started') -> None:
         """
@@ -64,9 +49,16 @@ class Task(LoggingStuff):
         
     def run(self, inputs:tuple):
         """
-        Calls _run with the specified parameters where actual execution will be run. 
+        A function that runs the func with kwargs specificed in the Task
+
+        Returns:
+            Any: If there is a df, list, etc. to return by the specific function, it will return this. 
         """
-        self.result = self._run(*inputs, **self.kwargs)
+        
+        try:
+            self.result = self.func(*inputs, **self.kwargs)
+        except Exception as error:
+            self._log.exception(error, exc_info=True, stack_info=True)
         
 def createTask(inputs: Union[Task, tuple]):
     """

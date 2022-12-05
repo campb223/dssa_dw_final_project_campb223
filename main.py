@@ -430,7 +430,6 @@ def main():
                 dependsOn=['createSchema', 'createDimCustomer', 'createDimStore',  'createDimFilm', 'createDimStaff', 'createDimDate'],
                 name='createFactRentals')
         ],
-        type='default'
     )
     
     # Creates a DAG for extracting the information from the existing DB. 
@@ -439,7 +438,7 @@ def main():
             Task(readData,
                 kwargs={'tableName': dvd.customer,'columns': ('customer_id', 'first_name', 'last_name', 'email')},
                 dependsOn=['createFactRentals'],
-                name='extractCust'
+                name='extractCustomer'
                 ),
             Task(readData,
                 kwargs={'tableName': dvd.staff,'columns': ('staff_id', 'first_name', 'last_name', 'email')},
@@ -492,28 +491,28 @@ def main():
     transform = Pipeline(
         steps=[
             Task(buildDimCustomer,
-                dependsOn=['extractCust'],
-                name='transfCust'
+                dependsOn=['extractCustomer'],
+                name='transformCustomer'
                 ),
             Task(buildDimStaff,
-                dependsOn=['extractStaff', 'transfCust'],
-                name='transfStaff'
+                dependsOn=['extractStaff', 'transformCustomer'],
+                name='transformStaff'
                 ),
             Task(buildDimDates,
-                dependsOn=['extractDates', 'transfStaff'],
-                name='transfDates'
+                dependsOn=['extractDates', 'transformStaff'],
+                name='transformDates'
                 ),
             Task(buildDimFilm,
-                dependsOn=['extractFilm', 'extractLanguage', 'transfDates'],
-                name='transfFilm'
+                dependsOn=['extractFilm', 'extractLanguage', 'transformDates'],
+                name='transformFilm'
                 ),
             Task(buildDimStore,
-                dependsOn=['extractStore', 'extractStaff', 'extractAddress', 'extractCity', 'extractCountry', 'transfFilm'],
-                name='transfStore'
+                dependsOn=['extractStore', 'extractStaff', 'extractAddress', 'extractCity', 'extractCountry', 'transformFilm'],
+                name='transformStore'
                 ),
             Task(buildFactRental,
-                dependsOn=['extractDates', 'extractInventory', 'transfDates', 'transfFilm', 'transfStaff', 'transfStore'],
-                name='transfFactRental'
+                dependsOn=['extractDates', 'extractInventory', 'transformDates', 'transformFilm', 'transformStaff', 'transformStore'],
+                name='transformFactRental'
                 ),
             
         ]
@@ -522,40 +521,34 @@ def main():
     load = Pipeline(
         steps=[
             Task(loadData,
-                dependsOn=['transfCust'],
+                dependsOn=['transformCustomer'],
                 kwargs={'target': dw.customer},
-                name='loadCustomer',
-                skipValidation=True
+                name='loadCustomer'
                 ),
             Task(loadData,
-                dependsOn=['transfStaff'],
+                dependsOn=['transformStaff'],
                 kwargs={'target': dw.staff},
-                name='loadStaff',
-                skipValidation=True
+                name='loadStaff'
                 ),
             Task(loadData,
-                dependsOn=['transfDates'],
+                dependsOn=['transformDates'],
                 kwargs={'target': dw.date},
-                name='loadDates',
-                skipValidation=True
+                name='loadDates'
                 ),
             Task(loadData,
-                dependsOn=['transfStore'],
+                dependsOn=['transformStore'],
                 kwargs={'target': dw.store},
-                name='loadStore',
-                skipValidation=True
+                name='loadStore'
                 ),
             Task(loadData,
-                dependsOn=['transfFilm'],
+                dependsOn=['transformFilm'],
                 kwargs={'target': dw.film},
-                name='loadFilm',
-                skipValidation=True
+                name='loadFilm'
                 ),
             Task(loadData,
-                dependsOn=['transfFactRental', 'loadFilm', 'loadStore', 'loadDates', 'loadStaff', 'loadCustomer'],
+                dependsOn=['transformFactRental', 'loadFilm', 'loadStore', 'loadDates', 'loadStaff', 'loadCustomer'],
                 kwargs={'target': dw.factRental},
-                name='loadFactRental',
-                skipValidation=True
+                name='loadFactRental'
                 )
         ]
     )
@@ -572,7 +565,7 @@ def main():
                     load
                     ],
                 name='tearDown',
-                skipValidation=True)
+            )
             ]
         )
     
@@ -597,7 +590,7 @@ def main():
     #plot_dag(workflow.dag, savefig=True, path='dag.png')
     
     # Save the DAG so that it can be scheduled
-    workflow.dump(filename='dags/dvd_rental_workflow.pkl')
+    #workflow.dump(filename='dags/dvd_rental_workflow.pkl')
 
     # ============================ ENQUEUE ============================ #
     # This section uses the .collect() method which enqueues all tasks in the DAG
