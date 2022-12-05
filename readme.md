@@ -72,7 +72,7 @@ There are a few processes that need to take place to create this model. The gene
 ## How Did I Develop My Python Modules? 
 `Tasks` - 
 <br>
-`Queue` - 
+`Queue` -  A First In - First Out (FIFO) design pattern. My Queue is called a `warehouse`. Currently there is only one type that is initiated -- Default = ThreadSafeQueue
 <br>
 `Scheduler` - 
 <br>

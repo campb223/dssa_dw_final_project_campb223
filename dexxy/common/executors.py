@@ -6,19 +6,16 @@ from typing import TypeVar
 Queue = TypeVar('Queue')
 
 class Worker(LoggingStuff):
-    """_summary_
 
-    Args:
-        LoggingStuff (_type_): _description_
-    """
     workerID = 0
     
     def __init__(self, taskQueue: Queue, resultQueue: Queue):
-        """_summary_
+        """
+        Initalization of a Worker object. Takes in the taskQueue to know when to execute Tasks, then uses the resultsQueue to know what outputs to pass to future taskQueue executions. 
 
         Args:
-            taskQueue (Queue): _description_
-            resultQueue (Queue): _description_
+            taskQueue (Queue): A queue of the Tasks to execute
+            resultQueue (Queue): The outputs from functions called by the Tasks which could be needed for future func calls from Tasks. 
         """
         Worker.workerID += 1
         self.workerID = Worker.workerID
@@ -28,6 +25,9 @@ class Worker(LoggingStuff):
         self._log.info('Built Worker %s' % self.workerID)
         
     def run(self): 
+        """
+        A loop that processes getting Tasks from the queue and processing them based on their instructions defined. 
+        """
 
         while not self.taskQueue.empty():
             
@@ -53,20 +53,16 @@ class Worker(LoggingStuff):
             self.taskQueue.task_done()
             
 class Executor(LoggingStuff):
-    """_summary_
-
-    Args:
-        LoggingStuff (_type_): _description_
-    """
     
     job_id = generateUniqueID()
     
     def __init__(self, taskQueue, resultQueue):
-        """_summary_
+        """
+        Initalization of a Executor object. Takes in the taskQueue to know when to execute Tasks, then uses the resultsQueue to know what outputs to pass to future taskQueue executions. 
 
         Args:
-            taskQueue (_type_): _description_
-            resultQueue (_type_): _description_
+            taskQueue (Queue): A queue of the Tasks to execute
+            resultQueue (Queue): The outputs from functions called by the Tasks which could be needed for future func calls from Tasks. 
         """
         self.taskQueue = taskQueue
         self.resultQueue = resultQueue
@@ -74,10 +70,8 @@ class Executor(LoggingStuff):
         self._log.info('Built Executor %s' % self.job_id)
         
     def start(self):
-        """_summary_
-
-        Returns:
-            _type_: _description_
+        """
+        Starts execution. 
         """
         # Starts workers for processing Tasks
         self._log.info('Starting Job %s' % self.job_id)
@@ -85,7 +79,8 @@ class Executor(LoggingStuff):
         return self.worker.run()
         
     def end(self):
-        """_summary_
+        """
+        Ends the execution. 
         """
         # Stops execution of Tasks
         del self.worker

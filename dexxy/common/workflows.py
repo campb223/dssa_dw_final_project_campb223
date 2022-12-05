@@ -13,10 +13,7 @@ class Pipeline(DAG, LoggingStuff):
 
     pipeline_id = 0
 
-    def __init__(
-            self,
-            steps: List[Task] = [],
-            type: Literal['default', 'asyncio', 'multi-threading', 'multi-processing'] = 'default'):
+    def __init__(self, steps: List[Task] = [], type: Literal['default', 'asyncio', 'multi-threading', 'multi-processing'] = 'default'):
 
         Pipeline.pipeline_id += 1
         super().__init__()
@@ -29,16 +26,32 @@ class Pipeline(DAG, LoggingStuff):
         self._log.info('Built Pipeline %s' % self.pid)
 
     def _merge_dags(self, pipeline: "Pipeline") -> None:
-        """Allow a Pipeline object to receive an other Pipeline object \
-        by merging two Graphs together and preserving attributes.
         """
+        Allow a Pipeline object to receive an other Pipeline object by merging two Graphs together and preserving attributes.
+
+        Args:
+            pipeline (Pipeline): _description_
+        """
+        
         pipeline.compose(self)
         G = pipeline.dag
         self.dag = self.merge(G, self.dag)
         self.repair_attributes(G, self.dag, 'tasks')
 
     def _proc_pipeline_dep(self, idx, task, dep):
-        """Process Dependencies that contain another Pipeline
+        """
+        Process Dependencies that contain another Pipeline
+
+        Args:
+            idx (_type_): _description_
+            task (_type_): _description_
+            dep (_type_): _description_
+
+        Raises:
+            DependencyError: _description_
+
+        Returns:
+            _type_: _description_
         """
         # gets the last step from the pipeline dependency
         dep_task = dep.steps[-1]

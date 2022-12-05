@@ -594,10 +594,10 @@ def main():
     
     # Optionally we can plot the DAG (this module needs work bewarned)
     #plot_dag(etl_workflow.dag, savefig=False, path='dag.png')
-    plot_dag(workflow.dag, savefig=True, path='dag.png')
+    #plot_dag(workflow.dag, savefig=True, path='dag.png')
     
     # Save the DAG so that it can be scheduled
-    #workflow.dump(filename='dags/dvd_rental_workflow.pkl')
+    workflow.dump(filename='dags/dvd_rental_workflow.pkl')
 
     # ============================ ENQUEUE ============================ #
     # This section uses the .collect() method which enqueues all tasks in the DAG
