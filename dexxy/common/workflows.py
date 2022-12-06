@@ -189,9 +189,10 @@ class Pipeline(LoggingStuff):
 
         self.queue = QueueWarehouse.warehouse(self.type)
         # Begin Enqueuing all Tasks in the DAG
-        nodes = self.get_all_nodes()
+        nodes = dict(self.dag.nodes(data=True))
         # Get Topological sort of Task Nodes by Id
-        for task_node_id in self.topological_sort():
+        
+        for task_node_id in list(topological_sort(G=self.dag)):
             # Lookup each task in a node
             n_attrs = nodes[task_node_id]
             # Enqueue Tasks & update status
@@ -202,10 +203,8 @@ class Pipeline(LoggingStuff):
     def run(self) -> Any:
         """Allows for Local Execution of a Pipeline Instance. Good for Debugging
         for advanced features and concurrency support use submit"""
+        
         self.result_queue = QueueWarehouse.warehouse(self.type)
-        # If Queue is empty, populate it
-        #if self.queue.empty():
-        #    self.collect()
 
         # Setup Default Worker
         worker = Worker(taskQueue=self.queue, resultQueue=self.result_queue)
@@ -247,23 +246,6 @@ class Pipeline(LoggingStuff):
         """
         # Add the edge to the DAG
         self.dag.add_edges_from([(tid_from, tid_to, activity_id, {"pid": pid, "tid_from": tid_from, "tid_to": tid_to,})])
-
-    def topological_sort(self) -> List:
-        """Sorts nodes in topological order for queuing tasks
-        Returns:
-            List: nodes containing Tasks in topological sort order
-        """
-        # Topical sort of Tasks into a list
-        return list(topological_sort(G=self.dag))
-
-    def get_all_nodes(self) -> dict:
-        """Get all Nodes from the DAG
-        Returns:
-            nodes (dict): dictionary of nodes contained in the DAG
-        """
-        # Returns all nodes + node attributes as a dict of dicts
-        nodes = dict(self.dag.nodes(data=True))
-        return nodes
 
     def get_all_attributes(self, name: str = None) -> dict:
         """Gets all matching attributes found in a Graph
