@@ -16,7 +16,7 @@ from dexxy.database.postgres import PostgresClient
 
 databaseConfig = "config/database.ini"
 section = 'postgresql'
-dw = Schema('dw')
+dw = Schema('dssa')
 dvd = Schema('public')
 
 
@@ -66,7 +66,7 @@ DIM_FILM = (
 )
 
 DIM_DATE = (
-    Column('sk_date', 'TIMESTAMP', False),
+    Column('sk_date', 'DATE', False),
     Column('quarter_name', 'INT', False),
     Column('year', 'INT', False),
     Column('month', 'INT', False),
@@ -133,7 +133,7 @@ def createSchema(cursor: Cursor, schemaName: str) -> Cursor:
     cursor.execute(q)
     return cursor
 
-def tearDown(cursor: Cursor, *args, **kwargs) -> None:
+def tearDown(*args, **kwargs) -> None:
     """
     Closes the connection to the database. 
 
@@ -380,7 +380,7 @@ def buildFactRental(rental_df:pd.DataFrame,
 
 def clearPastDBData():
     cursor = createCursor(databaseConfig, section)
-    cursor.execute("DROP SCHEMA dw CASCADE;")
+    cursor.execute("DROP SCHEMA dssa CASCADE;")
     cursor.close()
     
     
@@ -551,17 +551,16 @@ def main():
                 )
         ]
     )
-
+    
     # Creates a DAG for tear down tasks and closing out any open connections to the database
     teardown = Pipeline(
         steps =[
             Task(tearDown,
-                dependsOn= ['createCursor', load],
+                dependsOn= [load],
                 name='tearDown',
-            )
+                )
             ]
         )
-    
     
     # We merge all the above Pipelines into a single Pipeline containing all Tasks to be added to the DAG.
     workflow = Pipeline(
@@ -578,22 +577,18 @@ def main():
     # This section composes the DAG from the provided Tasks 
     workflow.compose()
     
-    # Optionally we can plot the DAG (this module needs work bewarned)
-    #plot_dag(etl_workflow.dag, savefig=False, path='dag.png')
+    # Optionally we can plot the DAG
     #plot_dag(workflow.dag, savefig=True, path='dag.png')
     
     # Save the DAG so that it can be scheduled
     #workflow.dump(filename='dags/dvd_rental_workflow.pkl')
 
     # ============================ ENQUEUE ============================ #
-    # This section uses the .collect() method which enqueues all tasks in the DAG
-    # to a task FIFO queue in topological order 
+    # This section uses the .collect() method which enqueues all tasks in the DAG to a task FIFO queue in topological order 
     workflow.collect()
 
     # ============================ EXECUTION ============================ #
-    # Runs a Maellin Workflow locally using a single worker
-    # This option is good for debugging before presisting the workflow 
-    # and submitting it to the scheduler.
+    # Runs the workflow locally using a single worker
     workflow.run()
     
 

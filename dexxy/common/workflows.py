@@ -1,10 +1,9 @@
 import cloudpickle as cpickle
-from dexxy.common.scheduler import DefaultScheduler
 from dexxy.common.logger import LoggingStuff
 from dexxy.common.graphs import DAG
 from dexxy.common.queues import QueueWarehouse
 from dexxy.common.tasks import Task, createTask
-from dexxy.common.executors import Executor
+from dexxy.common.executors import Worker
 from dexxy.common.exceptions import DependencyError, NotFoundError
 from typing import Any, List, Literal, Tuple
 
@@ -22,10 +21,9 @@ class Pipeline(DAG, LoggingStuff):
         self.type = type
         self._log = self.logger
         self.queue = QueueWarehouse.warehouse(type=type)
-        self.sched = DefaultScheduler()
-        self._log.info('Built Pipeline %s' % self.pid)
+        self._log.info('Initalized Pipeline %s' % self.pid)
 
-    def _merge_dags(self, pipeline: "Pipeline") -> None:
+    def merge_dags(self, pipeline: "Pipeline") -> None:
         """
         Allow a Pipeline object to receive another Pipeline object by merging two Graphs together and preserving attributes.
 
@@ -38,7 +36,7 @@ class Pipeline(DAG, LoggingStuff):
         self.dag = self.merge(G, self.dag)
         self.repair_attributes(G, self.dag, 'tasks')
 
-    def _proc_pipeline_dep(self, idx, task, dep):
+    def proc_pipeline_dep(self, idx, task, dep):
         """
         Process Dependencies that contain another Pipeline
 
@@ -68,7 +66,7 @@ class Pipeline(DAG, LoggingStuff):
 
         return (task, dep_task)
 
-    def _proc_named_dep(self, idx: int, task: Task, dep: str, input_pipe: "Pipeline"):
+    def proc_named_dep(self, idx: int, task: Task, dep: str, input_pipe: "Pipeline"):
         """Process Dependencies that contain a reference to another task"""
         # this is very ugly and needs to be refactored
         try:
@@ -89,7 +87,7 @@ class Pipeline(DAG, LoggingStuff):
 
         return (task, dep_task)
 
-    def _proc_task_dep(self, task, dep, input_pipe):
+    def proc_task_dep(self, task, dep, input_pipe):
         """Processes Dependencies that contain a subclass of a Task."""
 
         # Lookup dependent task from the current pipeline
@@ -106,59 +104,17 @@ class Pipeline(DAG, LoggingStuff):
 
         return (task, dep)
 
-    def _process_dep(self, idx: int, task: Task, dep: Any, input_pipe: "Pipeline") -> Tuple[Task, Task]:
+    def process_dep(self, idx: int, task: Task, dep: Any, input_pipe: "Pipeline") -> Tuple[Task, Task]:
         """Basic Factory function for processing dependencies.
         """
         if isinstance(dep, Pipeline):
-            return self._proc_pipeline_dep(idx, task, dep)
+            return self.proc_pipeline_dep(idx, task, dep)
         elif isinstance(dep, str):
-            return self._proc_named_dep(idx, task, dep, input_pipe)
+            return self.proc_named_dep(idx, task, dep, input_pipe)
         elif issubclass(type(dep), Task):
-            return self._proc_task_dep(task, dep, input_pipe)
+            return self.proc_task_dep(task, dep, input_pipe)
         else:
             raise TypeError("Invalid Dependencies found in {self.__name__}: Task {task.__name__} ")
-
-    def dump(self, filename: str, protocol: str = None):
-        """Serializes a DAG using cloudpickle
-        Args:
-            filename (str): name of file to write to.
-            protocol (str, optional): protocol defaults to cloudpickle.DEFAULT_PROTOCOL  \
-                which is an alias to pickle.HIGHEST_PROTOCOL.
-        Usage:
-        #>>> filename = 'my_dag.pkl' # filename to use to serialize DAG
-        #>>> pipe = Pipeline(steps=my_steps) # create new pipeline instance with steps
-        #>>> pipe.compose() # compose a DAG from steps
-        #>>> pipe.dump(filename) # save the DAG
-        """
-
-        with open(filename, 'wb') as f:
-            import dexxy
-            cpickle.register_pickle_by_value(module=dexxy)
-            cpickle.dump(obj=self.dag, file=f, protocol=protocol)
-        return self
-
-    def dumps(self, protocol: str = None):
-        """Serializes a DAG using cloudpickle"""
-        import dexxy
-        cpickle.register_pickle_by_value(module=dexxy)
-        pkl_dag = str(cpickle.dumps(obj=self.dag, protocol=protocol)).encode('utf-8')
-        return pkl_dag
-
-    def load(self, filename: str):
-        """loads a DAG to a pipeline instance
-        Args:
-            filename (str): filename of the pickled DAG
-        Usage:
-        >>> filename = 'my_dag.pkl' # filename to pickled dag file
-        >>> new_pipe = Pipeline() # create new pipeline instance
-        >>> new_pipe.load(filename) # load the dag to the pipeline instance
-        >>> new_pipe.run() # run the pipeline
-        """
-
-        with open(filename, 'rb') as f:
-            dag = cpickle.load(f)
-            self.dag = dag
-        return self
 
     def get_task_by_name(self, name: str) -> Task:
         """Retrieves an Task from the DAG using its name
@@ -185,14 +141,14 @@ class Pipeline(DAG, LoggingStuff):
         for task in self.steps:
             # Process the task with a special call if it is a Pipeline Instance
             if isinstance(task, Pipeline):
-                self._merge_dags(task)
+                self.merge_dags(task)
                 continue
 
             # Process the dependencies
             if task.dependsOn is not None:
                 for idx, dep_task in enumerate(task.dependsOn):
                     # Process the dependency
-                    task, dep_task = self._process_dep(idx, task, dep_task, input_pipe)
+                    task, dep_task = self.process_dep(idx, task, dep_task, input_pipe)
 
                     # Add edge to DAG using task id as an edge key
                     self.add_edge_to_dag(self.pid, dep_task.tid, task.tid, task.tid)
@@ -202,7 +158,7 @@ class Pipeline(DAG, LoggingStuff):
             self.add_node_to_dag(task)
 
         # Validates DAG was constructed properly
-        self._validate_dag()
+        self.validate_dag()
 
     def collect(self) -> None:
         """Enqueues all Tasks from the constructed DAG in topological sort order
@@ -231,24 +187,10 @@ class Pipeline(DAG, LoggingStuff):
         if self.queue.empty():
             self.collect()
 
-        # Setup Default Executor
-        executor = Executor(taskQueue=self.queue, resultQueue=self.result_queue)
+        # Setup Default Worker
+        worker = Worker(taskQueue=self.queue, resultQueue=self.result_queue)
 
         # Start execution of Tasks
         self._log.info('Starting Execution')
-        executor.start()
-        executor.end()
-
-    def submit(self, name: str, trigger='interval', minutes=1, max_instances=1, replace_existing=True) -> str:
-        """Submits DAG to the Scheduler"""
-
-        if self.sched.state == 0:
-            self.sched.start()
-
-        self.sched.add_job(
-            func=self.run,
-            name=name,
-            trigger=trigger,
-            replace_existing=replace_existing,
-            max_instances=max_instances,
-            minutes=minutes)
+        worker.start()
+        worker.end()
