@@ -20,20 +20,3 @@ def generateUniqueID(name: str = None) -> str:
         return str(uuid5(NAMESPACE_OID, name))
     # Otherwise generate a random UUID.
     return str(uuid4())
-
-def getTaskResult(task) -> Tuple[Any]:
-    """
-    Takes in a node in the Task with a list of UUIDs to lookup. Then looks up the data required to run a task using the provided list of UUIDs. 
-
-    Returns:
-        Tuple[Any]: Returns the outputs from the Tasks func call. Could be a cursor, df, etc. 
-    """
-    
-    inputs = []
-    
-    # If there's a task
-    if task is not None:
-        data = task.result
-        if data is not None:
-            inputs.append(data)
-    return tuple(inputs)

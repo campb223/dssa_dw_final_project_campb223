@@ -1,4 +1,4 @@
-from typing import List, Union, TypeVar, Callable, Literal, Tuple
+from typing import Any, List, Union, TypeVar, Callable, Literal, Tuple
 from dexxy.common.logger import LoggingStuff
 from dexxy.common.utils import generateUniqueID
 
@@ -57,7 +57,24 @@ class Task(LoggingStuff):
             self.result = self.func(*inputs, **self.kwargs)
         except Exception as error:
             self._log.exception(error, exc_info=True, stack_info=True)
-        
+            
+def getTaskResult(task) -> Tuple[Any]:
+    """
+    Takes in a node in the Task with a list of UUIDs to lookup. Then looks up the data required to run a task using the provided list of UUIDs. 
+
+    Returns:
+        Tuple[Any]: Returns the outputs from the Tasks func call. Could be a cursor, df, etc. 
+    """
+    
+    inputs = []
+    
+    # If there's a task
+    if task is not None:
+        data = task.result
+        if data is not None:
+            inputs.append(data)
+    return tuple(inputs)
+
 def createTask(inputs: Union[Task, tuple]):
     """
     A function to create a new Task. Checks what type of instance is passed in. 

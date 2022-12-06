@@ -1,5 +1,5 @@
 from dexxy.common.logger import LoggingStuff
-from dexxy.common.utils import getTaskResult
+from dexxy.common.tasks import getTaskResult
 from dexxy.common.utils import generateUniqueID
 from typing import TypeVar
 
