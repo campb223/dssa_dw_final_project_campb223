@@ -7,9 +7,9 @@ Pipeline = TypeVar('Pipeline')
 
 class Task(LoggingStuff):
     
-    def __init__(self, func: Callable, kwargs: dict = {}, dependsOn: List = None, name: str = None, desc: str = None) -> None:
+    def __init__(self, func: Callable, kwargs: dict = {}, dependsOn: List = None, name: str = None) -> None:
         """
-        Initalization of the class Task. During inilization it will look like:
+        Initalization of the class Task. To inilizatize it will look like:
             Task(createCursor,
                 kwargs={'path': databaseConfig, 'section': section},
                 dependsOn=None,
@@ -23,14 +23,12 @@ class Task(LoggingStuff):
             kwargs (dict, optional): This is the input paramters to the specified function. Defaults to {}.
             dependsOn (List, optional): List of other Tasks this is dependent on to execute. Defaults to None.
             name (str, optional): Name of the Task. Defaults to None.
-            desc (str, optional): Description of the Task. Defaults to None.
         """
         
         self.func = func
         self.kwargs = kwargs
         self.dependsOn = dependsOn
         self.name = name
-        self.desc = desc
         self.status = "Not Started"
         self.related = []
         self.result = None

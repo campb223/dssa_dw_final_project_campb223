@@ -21,7 +21,7 @@ dvd = Schema('public')
 
 
 ############## Table Definitions ################
-# These are some generic builds for our star-schema. For visual reference refer to the star-schema.jpg in the Provided Materials. 
+# These are some generic builds for our star-schema. For visual reference refer to the star-schema.jpg. 
 # These tables will be used with Pypika. Pypika "is a Python API for building SQL queries". For additional information on Pypika, visit the link below:
 #     https://pypika.readthedocs.io/en/latest/
 
@@ -79,9 +79,9 @@ DIM_DATE = (
 # They're mostly for connecting to the database, grabbing table data, and writing table data. 
 
 def createCursor(path:str, section:str) -> Cursor:
-    """ NEED TO COMBINE THESE
+    """
     This function uses the class generated in dexxy/database/postgres.py
-    By passing the location to the database connection credentials and the database type, it will attempt to secure a conenction to the database and return the cursor (if succesful).
+    By passing the location to the database connection credentials and the database type, it will attempt to secure a conenction to the database and return the connection (if succesful).
     
     The method will attempt to verify the connection before returning. 
 
@@ -90,29 +90,23 @@ def createCursor(path:str, section:str) -> Cursor:
         section (str): The type of database to connect to. For this project, I'm using PostgreSQL so section should be == "postgres"
 
     Returns:
-        Cursor: A cursor connection to the database which can be used to read data, write data, etc. 
+        Cursor: A cursor instance.
     """
     
-    """Creates a Database Cursor for sending commands
-    and queries to the connection instance
-    Args:
-        path (str): path to an ini file containing database params
-        section (str): section name in the ini file containing pararms
-    Returns:
-        Cursor: A Cursor instance
-    """
     client = PostgresClient()
     conn = client.connect_from_config(path, section, autocommit=True)
     cursor = conn.cursor()
     return cursor
+
+### Global variable for a connection to the db
 cursor = createCursor(databaseConfig, section)
 
 def setSearchPath(cursor: Cursor) -> None:
     """
-    Sets the default search path to the public schema to make our select queries use unqualified names (easier to work with). 
+    Sets the default search path to the public schema to make our select queries.
 
     Args:
-        cursor (Cursor): A Cursor connection to the database. This will be used to connect, then set the search path. 
+        cursor (Cursor): A Cursor instance.
     """
     cursor.execute("SET search_path TO public;")
     return
@@ -123,11 +117,11 @@ def createSchema(cursor: Cursor, schemaName: str) -> Cursor:
     If the schema already exists, nothing is created. Returns Cursor. 
 
     Args:
-        cursor (Cursor): A Cursor connection to the database.
+        cursor (Cursor): A Cursor instance. 
         schemaName (str): A schemaName to create -- if it does not already exist. 
 
     Returns:
-        Cursor: A Cursor connection to the database.
+        Cursor: A Cursor instance.
     """
     q = f"CREATE SCHEMA IF NOT EXISTS {schemaName};"
     cursor.execute(q)
@@ -138,22 +132,22 @@ def tearDown(*args, **kwargs) -> None:
     Closes the connection to the database. 
 
     Args:
-        cursor (Cursor): A Cursor connection to the database that will be closed. 
+        cursor (Cursor): A Cursor instance. 
     """
     cursor.close()
     return
     
 def createTable(cursor:Cursor, tableName:str, definition:tuple, primaryKey:str=None, foreignKeys:list=None, referenceTables:list=None) -> None: 
     """
-    _summary_
+    Creates a table inside the database using the supplied paramters. If they are not provided, they're initalied to None. 
 
     Args:
-        cursor (Cursor): _description_
-        tableName (str): _description_
+        cursor (Cursor): A Cursor instance. 
+        tableName (str): The tablename to create the table on. 
         definition (tuple): _description_
-        primaryKey (str, optional): _description_. Defaults to None.
-        foreignKeys (list, optional): _description_. Defaults to None.
-        referenceTables (list, optional): _description_. Defaults to None.
+        primaryKey (str, optional): The primary key(s) for relationship instantiation. Defaults to None.
+        foreignKeys (list, optional): The foreign key(s) for relationship instantiation.. Defaults to None.
+        referenceTables (list, optional): A list of tables that are relational to the new table we're creating. Defaults to None.
     """
     
     ddl = PostgreSQLQuery \
@@ -179,15 +173,15 @@ def createTable(cursor:Cursor, tableName:str, definition:tuple, primaryKey:str=N
     
 def readData(tableName:str, columns:tuple) -> pd.DataFrame:
     """
-    Executes a query to selects Columns and rows from a Table using a cursor 
+    Executes a query to selects Columns and rows from a Table using a cursor.  
     
     Args:
         cursor (Cursor): A cursor instance
-        tableName (str): name of the table to query
-        columns (tuple): name of columns from the table to select
+        tableName (str): The name of the table to query
+        columns (tuple): The name of columns from the table to select
     
     Returns:
-        pd.DataFrame: Returns results in a pandas dataframe
+        pd.DataFrame: Returns results in a pandas dataframe. This will be used later to transform the data. 
     """
     query = PostgreSQLQuery \
         .from_(tableName) \
@@ -209,8 +203,8 @@ def loadData(df:pd.DataFrame, target:str):
     Writes data to a table from a pandas dataframe
     
     Args:
-        cursor (Cursor): A cusror instance to the database
-        df (pd.DataFrame): pandas dataframe containing data to write 
+        cursor (Cursor): A cusror instance to the database.
+        df (pd.DataFrame): pandas dataframe containing data to write to the database. 
         target (str): name of table for "INSERT" query
     """
     data = tuple(df.itertuples(index=False, name=None))
@@ -223,11 +217,10 @@ def loadData(df:pd.DataFrame, target:str):
 
 def buildDimCustomer(cust_df:pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
     """
-    constructs the customer dimension object
+    Constructs the customer dimension object as described in the star-schema.jpg 
     
     Args:
-        cust_df (pd.DataFrame): dataframe from the raw customer table \
-            that is usually the result of readTable
+        cust_df (pd.DataFrame): dataframe from the raw customer table that is usually the result of readTable
     
     Returns:
         pd.DataFrame: customer dimension object as a pandas dataframe
@@ -240,11 +233,10 @@ def buildDimCustomer(cust_df:pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
     
 def buildDimStaff(staff_df:pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
     """
-    constructs the staff dimension object
+    Constructs the staff dimension object as described in the star-schema.jpg 
     
     Args:
-        staff_df (pd.DataFrame): dataframe from the raw staff table \
-            that is usually the result of readTable
+        staff_df (pd.DataFrame): dataframe from the raw staff table that is usually the result of readTable
     
     Returns:
         pd.DataFrame: staff dimension object as a pandas dataframe
@@ -257,12 +249,10 @@ def buildDimStaff(staff_df:pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
     
 def buildDimDates(dates_df:pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
     """
-    constructs the dates dimension table
+    Constructs the dates dimension table as described in the star-schema.jpg 
     
     Args:
-        dates_df (pd.DataFrame): dataframe from the raw rental table \
-            that is usually the result of readTable. The DVD rental \
-            database does not have dates table so one is derived.
+        dates_df (pd.DataFrame): dataframe from the raw rental table that is usually the result of readTable. The DVD rental database does not have dates table so one is derived.
     
     Returns:
         pd.DataFrame: date dimension object as a pandas dataframe
@@ -277,13 +267,9 @@ def buildDimDates(dates_df:pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
     dim_dates.drop_duplicates(inplace=True)
     return dim_dates
 
-def buildDimStore(store_df:pd.DataFrame, 
-    staff_df:pd.DataFrame, 
-    address_df:pd.DataFrame,
-    city_df:pd.DataFrame,
-    country_df:pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
+def buildDimStore(store_df:pd.DataFrame, staff_df:pd.DataFrame, address_df:pd.DataFrame, city_df:pd.DataFrame, country_df:pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
     """
-    constructs the store dimension table
+    Constructs the store dimension table as described in the star-schema.jpg 
     
     Args:
         store_df (pd.DataFrame): dataframe from the raw store table
@@ -317,7 +303,7 @@ def buildDimStore(store_df:pd.DataFrame,
 
 def buildDimFilm(film_df:pd.DataFrame, lang_df:pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
     """
-    constructs the film dimension table
+    Constructs the film dimension table as described in the star-schema.jpg 
     
     Args:
         film_df (pd.DataFrame): dataframe from the raw film table
@@ -341,14 +327,9 @@ def buildDimFilm(film_df:pd.DataFrame, lang_df:pd.DataFrame, *args, **kwargs) ->
     film_df = film_df[['sk_film', 'rating_code', 'film_duration', 'rental_duration', 'language', 'release_year', 'title']].copy()
     return film_df
 
-def buildFactRental(rental_df:pd.DataFrame,
-    inventory_df:pd.DataFrame,
-    date_df:pd.DataFrame,
-    film_df:pd.DataFrame,
-    staff_df:pd.DataFrame,
-    store_df:pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
+def buildFactRental(rental_df:pd.DataFrame, inventory_df:pd.DataFrame, date_df:pd.DataFrame, film_df:pd.DataFrame, staff_df:pd.DataFrame, store_df:pd.DataFrame,*args,**kwargs) -> pd.DataFrame:
     """
-    _summary_
+    Constructs the fact table as described in the star-schema.jpg 
     
     Args:
         rental_df (pd.DataFrame): dataframe from the raw rental table
@@ -379,16 +360,21 @@ def buildFactRental(rental_df:pd.DataFrame,
     return rental_df
 
 def clearPastDBData():
+    """
+    Uses the global createCursor object to remove the existing schema 'dssa' then close the connection. Used for debugging so I can perform new executions to test Classes, Tasks, etc. 
+    """
     cursor = createCursor(databaseConfig, section)
     cursor.execute("DROP SCHEMA dssa CASCADE;")
     cursor.close()
     
     
 def main():
+    
     try:
         clearPastDBData()
+        print("Schema has been removed. ")
     except:
-        print('table must not have previously existed.')
+        print('Schema must not have previously existed.')
 
     # Creates a DAG for setting up the connection to the DB, building tables, and building relationships. 
     setup = Pipeline(
@@ -431,7 +417,7 @@ def main():
         ],
     )
     
-    # Creates a DAG for extracting the information from the existing DB. 
+    # Creates a DAG for extracting the information from the existing DB dvdrental. 
     extract = Pipeline(
         steps=[
             Task(readData,
@@ -487,6 +473,7 @@ def main():
         ]
     )
     
+    # Creates a DAG for tranforming the data read in during extract workflow. 
     transform = Pipeline(
         steps=[
             Task(buildDimCustomer,
@@ -517,6 +504,7 @@ def main():
         ]
     )
     
+    # Creates a DAG for loading the data we transformed in the transform workflow. 
     load = Pipeline(
         steps=[
             Task(loadData,
@@ -558,9 +546,9 @@ def main():
             Task(tearDown,
                 dependsOn= [load],
                 name='tearDown',
-                )
-            ]
-        )
+            )
+        ]
+    )
     
     # We merge all the above Pipelines into a single Pipeline containing all Tasks to be added to the DAG.
     workflow = Pipeline(
@@ -579,9 +567,6 @@ def main():
     
     # Optionally we can plot the DAG
     #plot_dag(workflow.dag, savefig=True, path='dag.png')
-    
-    # Save the DAG so that it can be scheduled
-    #workflow.dump(filename='dags/dvd_rental_workflow.pkl')
 
     # ============================ ENQUEUE ============================ #
     # This section uses the .collect() method which enqueues all tasks in the DAG to a task FIFO queue in topological order 
