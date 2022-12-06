@@ -3,9 +3,6 @@ from psycopg.conninfo import make_conninfo
 from configparser import ConfigParser
 
 class PostgresClient():
-    """
-    Postgres client for working with postgres databases in python
-    """
 
     def __init__(self, host: str = None, port: int = None, user: str = None, password: str = None, dbname: str = None):
         """
@@ -31,11 +28,11 @@ class PostgresClient():
         Method that takes in the path and section of where a local copy of database connection parameters are. Files of this type should be included in the .gitignore file to prevent
         unauthorized credential access. The typical database.ini postgres file should look like:
             [postgresql]
-            host=localhost
-            port=5432
-            database=suppliers
-            user=postgres
-            password=SecurePas$1
+            host = localhost
+            port = 5432
+            user = postgres
+            password = pass
+            dbname = dvdrental
         Args:
             path (str): The filepath with database connection parameters. 
             section (str): The file type to verify and read. 
@@ -53,10 +50,7 @@ class PostgresClient():
             for k, v in config_params:
                 conn_dict[k] = v
 
-        conn = connect(
-            conninfo=make_conninfo(**conn_dict),
-            **kwargs
-        )
+        conn = connect(conninfo=make_conninfo(**conn_dict), **kwargs)
 
         return conn
 
@@ -65,11 +59,11 @@ class PostgresClient():
         A method to provide the database login information and return the connection (if valid) to the database. 
         Args:
             connectionList (List): A list of the login credentials to the database. Should match the pattern of:
-                host=localhost
-                port=5432
-                database=suppliers
-                user=postgres
-                password=SecurePas$1
+                host = localhost
+                port = 5432
+                user = postgres
+                password = pass
+                dbname = dvdrental
         Returns:
             Connection: a new connection instance
         """

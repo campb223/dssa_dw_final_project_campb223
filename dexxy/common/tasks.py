@@ -1,4 +1,4 @@
-from typing import List, Union, TypeVar, Any, Callable, Literal, Tuple
+from typing import List, Union, TypeVar, Callable, Literal, Tuple
 from dexxy.common.logger import LoggingStuff
 from dexxy.common.utils import generateUniqueID
 
@@ -36,7 +36,7 @@ class Task(LoggingStuff):
         self.result = None
         self.tid = generateUniqueID()
         self._log = self.logger
-        self._log.info('Built Task %s' % self.name)
+        self._log.info('Initalized Task %s' % self.name)
     
     def updateStatus(self, status: Literal['Not Started', 'Queued', 'Running', 'Completed', 'Failed'] = 'Not Started') -> None:
         """

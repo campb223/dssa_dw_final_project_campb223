@@ -12,7 +12,7 @@ class DAG:
         self.dag = MultiDiGraph()
         self.attrs = attrs
 
-    def _validate_dag(self) -> None:
+    def validate_dag(self) -> None:
         """Validates Pipeline is constructed properly
         Raises:
             CircularDependencyError: Error if DAG contains cycles
@@ -21,11 +21,11 @@ class DAG:
 
         # Validate DAG does not have cycles
         if not is_directed_acyclic_graph(self.dag):
-            raise CircularDependencyError("DAG Contains Cycles, Check Steps for Circular Dependencies")
+            raise CircularDependencyError("DAG Contains Cycles.")
 
         # Validate DAG does not have weakly connected nodes
         if not is_weakly_connected(self.dag):
-            raise MissingDependencyError("DAG Contains Weakly Connected Nodes, Check Steps for Missing Dependencies")
+            raise MissingDependencyError("DAG Contains Weakly Connected Nodes")
 
     def merge(self, G: MultiDiGraph, H: MultiDiGraph) -> MultiDiGraph:
         """Returns a new graph of G composed with H. Composition is the \

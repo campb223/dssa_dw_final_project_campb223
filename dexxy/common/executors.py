@@ -8,6 +8,7 @@ Queue = TypeVar('Queue')
 class Worker(LoggingStuff):
 
     workerID = 0
+    job_id = generateUniqueID()
     
     def __init__(self, taskQueue: Queue, resultQueue: Queue):
         """
@@ -22,7 +23,15 @@ class Worker(LoggingStuff):
         self.taskQueue = taskQueue
         self.resultQueue = resultQueue
         self._log = self.logger
-        self._log.info('Built Worker %s' % self.workerID)
+        self._log.info('Initalized Worker %s' % self.workerID)
+    
+    def start(self):
+        """
+        Starts execution. 
+        """
+        # Starts workers for processing Tasks
+        self._log.info('Starting Job %s' % self.job_id)
+        return self.run()
         
     def run(self): 
         """
@@ -52,35 +61,10 @@ class Worker(LoggingStuff):
             
             self.taskQueue.task_done()
             
-class Executor(LoggingStuff):
-    
-    job_id = generateUniqueID()
-    
-    def __init__(self, taskQueue, resultQueue):
-        """
-        Initalization of a Executor object. Takes in the taskQueue to know when to execute Tasks, then uses the resultsQueue to know what outputs to pass to future taskQueue executions. 
-
-        Args:
-            taskQueue (Queue): A queue of the Tasks to execute
-            resultQueue (Queue): The outputs from functions called by the Tasks which could be needed for future func calls from Tasks. 
-        """
-        self.taskQueue = taskQueue
-        self.resultQueue = resultQueue
-        self._log = self.logger
-        self._log.info('Built Executor %s' % self.job_id)
-        
-    def start(self):
-        """
-        Starts execution. 
-        """
-        # Starts workers for processing Tasks
-        self._log.info('Starting Job %s' % self.job_id)
-        self.worker = Worker(self.taskQueue, self.resultQueue)
-        return self.worker.run()
-        
     def end(self):
         """
         Ends the execution. 
         """
         # Stops execution of Tasks
-        del self.worker
+        del self.resultQueue
+        
