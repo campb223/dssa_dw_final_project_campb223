@@ -101,6 +101,7 @@ Task(createCursor,
     dependsOn=None,
     name='createCursor'),
 ```
+
 <br>
 `Queue` -  A First In - First Out (FIFO) design pattern. My Queue is called a `warehouse`. Currently there is only one type that is initiated -- Default = ThreadSafeQueue. 
 <br>
