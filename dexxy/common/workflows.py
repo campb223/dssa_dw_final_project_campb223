@@ -3,7 +3,7 @@ from dexxy.common.logger import LoggingStuff
 from dexxy.common.graphs import DAG
 from dexxy.common.queues import QueueWarehouse
 from dexxy.common.tasks import Task, createTask
-from dexxy.common.executors import Worker
+from dexxy.common.workers import Worker
 from dexxy.common.exceptions import DependencyError, NotFoundError
 from typing import Any, List, Literal, Tuple
 

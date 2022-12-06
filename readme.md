@@ -1,9 +1,31 @@
-# DSSA 5102 Final Project
+# DSSA 5102 Final Project -- Dexxy
 
 ## Introduction
 The intent of this project to implement an ETL (extract, transform, and load) pipeline from a database (dvdrental) into a data warehouse. There are times when a linear data processing pipeline would be sufficient, however, we love a challenge so we must implement this as a DAG (Directed Acyclic Graph)
 <br>
 <br>
+### About the DVD Rental database
+The DVD rental database represents the business processes of a DVD rental store as an OLTP PostgreSQL DB. 
+> The DVD rental database has many objects including:
+>15 tables, 1 trigger, 7 views, 8 functions, 1 domain, and 13 sequences
+
+15 tables in the DVD Rental database:
+
+> * actor – stores actors data including first name and last name.
+> * film – stores film data such as title, release year, length, rating, etc.
+> * film_actor – stores the relationships between films and actors.
+> * category – stores film’s categories data.
+> * film_category- stores the relationships between films and categories.
+> * store – contains the store data including manager staff and address.
+> * inventory – stores inventory data.
+> * rental – stores rental data.
+> * payment – stores customer’s payments.
+> * staff – stores staff data.
+> * customer – stores customer data.
+> * address – stores address data for staff and customers
+> * city – stores city names.
+> * country – stores country names.
+
 ### Objectives
 The main objective of this is to implement an ETL process in python to create a Star-Schema in a Data Warehouse. 
 <br>
@@ -12,7 +34,7 @@ There are a few processes that need to take place to create this model. The gene
     - Connect to the existing database - dvdrental
     - Extract data from the database
     - Transform the data into the necessary variable types
-    - Load the data into the Data Warehouse (dw)
+    - Load the data into the Data Warehouse (dssa)
 <br>
 ### Table Defintions 
 <b>Fact Table: FACT_RENTAL</b> <br>
@@ -66,24 +88,31 @@ There are a few processes that need to take place to create this model. The gene
 *   `Samples` - Genearl bits about how to use tasks, pipelines, etc. 
 *   `.gitignore` - In this file, you can include any code, folders, config files, etc. that you do NOT want uploaded to github. (Think of files like database.ini that include connection passwords.) 
 *   `LICENSE` - Open source GNU license markdown 
+*   `main.py` - This is the code that executes the local run of my ETL pipeline. 
 *   `README` - General overview of the project objective, structure, etc.  
 *   `requirements.txt` - list of python libraries to install with `pip`. These are necessary for code execution.  
+*   `star-schema.jpg` - The Star-Schema relationships we are tasked with creating. 
 
 ## How Did I Develop My Python Modules? 
-`Tasks` - 
+`Tasks` - This creates a Task class for individual nodes in the DAG. It allows me to set `dependsOn` variables which are used to determine the order of operations. Example of creating a Task to initalize a connection to a database:
+```
+Task(createCursor,
+    kwargs={'path': databaseConfig, 'section': section},
+    dependsOn=None,
+    name='createCursor'),
+```
 <br>
-`Queue` -  A First In - First Out (FIFO) design pattern. My Queue is called a `warehouse`. Currently there is only one type that is initiated -- Default = ThreadSafeQueue
+`Queue` -  A First In - First Out (FIFO) design pattern. My Queue is called a `warehouse`. Currently there is only one type that is initiated -- Default = ThreadSafeQueue. 
 <br>
-`Scheduler` - 
-<br>
-`Worker` - 
-<br>
-`Executor` - 
+`Worker` - Essentially just a for loop for grabbing Tasks from the queue then processing them. Durring runtime, the workflow calls `.run()` which calls the Worker to start execution. 
 <br>
 `DAG`- 
 <br>
 `Workflow` - 
 <br>
+`Postgres` - A class which creates a connection to a PostgreSQL database. Inside `config/database.ini` the table definitions need to be supplied. Remember to put this in your .gitignore to prevent database credentials from being seen. 
+<br>
+`Logger` - A class to track the progress of the DAG during runtime. A typical output looks like `2022-12-02 19:03:00,764 :: Worker :: INFO :: Running Tasks tearDown on Worker 1`. 
 <br>
 ## How To Organize `main.py` 
 *   As always in Python list your imports at the top of the file. 
@@ -101,13 +130,13 @@ import pandas as pd
 ################## Parameters ###################
 databaseConfig = "config/database.ini"
 section = 'postgresql'
-dw = Schema('dw')
+dw = Schema('dssa')
 dvd = Schema('public')
 
 ############## Table Definitions ################
 FACT_RENTAL = (
     Column('sk_customer', 'INT', False),
-    Column('sk_date', 'INT', False),
+    Column('sk_date', 'DATE', False),
     Column('sk_store', 'INT', False),
     Column('sk_film', 'INT', False),
     Column('sk_staff', 'INT', False),
@@ -128,15 +157,14 @@ def main():
                 kwargs={'path': databaseConfig, 'section': section},
                 dependsOn=None,
                 name='createCursor'),
-        ],
-        type='default'
+        ]
     )
 
     teardown = Pipeline(
         steps =[
             Task(tearDown,
                 dependsOn= [
-                    'createCursor',
+                    loads,
                 name='tearDown',
                 skipValidation=True)
             ]
