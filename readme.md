@@ -102,7 +102,6 @@ Task(createCursor,
     name='createCursor'),
 ```
 
-<br>
 `Queue` -  A First In - First Out (FIFO) design pattern. My Queue is called a `warehouse`. Currently there is only one type that is initiated -- Default = ThreadSafeQueue. 
 <br>
 `Worker` - Essentially just a for loop for grabbing Tasks from the queue then processing them. Durring runtime, the workflow calls `.run()` which calls the Worker to start execution. 
