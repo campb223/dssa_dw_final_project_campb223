@@ -1,5 +1,4 @@
 import pandas as pd
-from typing import List
 from psycopg import Cursor
 from pypika import PostgreSQLQuery
 from pypika import Schema, Column, PostgreSQLQuery
@@ -382,39 +381,47 @@ def main():
             Task(createCursor,
                 kwargs={'path': databaseConfig, 'section': section},
                 dependsOn=None,
-                name='createCursor'),
+                name='createCursor'
+            ),
             Task(createSchema,
                 kwargs={"schemaName": dw._name},
                 dependsOn=['createCursor'],
-                name='createSchema'),
+                name='createSchema'
+            ),
             Task(createTable,
                 kwargs={'tableName': dw.customer, 'primaryKey': 'sk_customer', 'definition':DIM_CUSTOMER},
                 dependsOn=['createSchema'],
-                name='createDimCustomer'),
+                name='createDimCustomer'
+            ),
             Task(createTable,
                 kwargs={'tableName': dw.store, 'primaryKey': 'sk_store', 'definition':DIM_STORE},
                 dependsOn=['createSchema'],
-                name='createDimStore'),
+                name='createDimStore'
+            ),
             Task(createTable,
                 kwargs={'tableName': dw.film, 'primaryKey': 'sk_film', 'definition':DIM_FILM},
                 dependsOn=['createSchema'],
-                name='createDimFilm'),
+                name='createDimFilm'
+            ),
             Task(createTable,
                 kwargs={'tableName': dw.staff, 'primaryKey': 'sk_staff', 'definition':DIM_STAFF},
                 dependsOn=['createSchema'],
-                name='createDimStaff'),
+                name='createDimStaff'
+            ),
             Task(createTable,
                 kwargs={'tableName': dw.date, 'primaryKey': 'sk_date', 'definition':DIM_DATE},
                 dependsOn=['createSchema'],
-                name='createDimDate'),
+                name='createDimDate'
+            ),
             Task(createTable,
                 kwargs={
                     'tableName': dw.factRental, 'definition':FACT_RENTAL,
                     'foreignKeys': ['sk_customer', 'sk_store', 'sk_film', 'sk_staff', 'sk_date'],
                     'referenceTables': [dw.customer, dw.store, dw.film, dw.staff, dw.date]},
                 dependsOn=['createSchema', 'createDimCustomer', 'createDimStore',  'createDimFilm', 'createDimStaff', 'createDimDate'],
-                name='createFactRentals')
-        ],
+                name='createFactRentals'
+            )
+        ]
     )
     
     # Creates a DAG for extracting the information from the existing DB dvdrental. 
@@ -424,52 +431,52 @@ def main():
                 kwargs={'tableName': dvd.customer,'columns': ('customer_id', 'first_name', 'last_name', 'email')},
                 dependsOn=['createFactRentals'],
                 name='extractCustomer'
-                ),
+            ),
             Task(readData,
                 kwargs={'tableName': dvd.staff,'columns': ('staff_id', 'first_name', 'last_name', 'email')},
                 dependsOn=['createFactRentals'],
                 name='extractStaff'
-                ),
+            ),
             Task(readData,
                 kwargs={'tableName': dvd.rental,'columns': ('rental_id', 'rental_date', 'inventory_id', 'staff_id', 'customer_id')},
                 dependsOn=['createFactRentals'],
                 name='extractDates'
-                ),
+            ),
             Task(readData,
                 kwargs={'tableName': dvd.address,'columns': ('address_id','address', 'city_id', 'district')},
                 dependsOn=['createFactRentals'],
                 name='extractAddress'
-                ),
+            ),
             Task(readData,
                 kwargs={'tableName': dvd.city,'columns': ('city_id','city', 'country_id')},
                 dependsOn=['createFactRentals'],
                 name='extractCity'
-                ),
+            ),
             Task(readData,
                 kwargs={'tableName': dvd.country,'columns': ('country_id','country')},
                 dependsOn=['createFactRentals'],
                 name='extractCountry'
-                ),
+            ),
             Task(readData,
                 kwargs={'tableName': dvd.store,'columns': ('store_id','manager_staff_id', 'address_id')},
                 dependsOn=['createFactRentals'],
                 name='extractStore'
-                ),
+            ),
             Task(readData,
                 kwargs={'tableName': dvd.film,'columns': ('film_id', 'rating', 'length', 'rental_duration', 'language_id','release_year', 'title')},
                 dependsOn=['createFactRentals'],
                 name='extractFilm'
-                ),
+            ),
             Task(readData,
                 kwargs={'tableName': dvd.language,'columns': ('language_id', 'name')},
                 dependsOn=['createFactRentals'],
                 name='extractLanguage'
-                ),
+            ),
             Task(readData,
                 kwargs={'tableName': dvd.inventory,'columns': ('inventory_id', 'film_id', 'store_id')},
                 dependsOn=['createFactRentals'],
                 name='extractInventory'
-                )
+            )
         ]
     )
     
@@ -479,28 +486,27 @@ def main():
             Task(buildDimCustomer,
                 dependsOn=['extractCustomer'],
                 name='transformCustomer'
-                ),
+            ),
             Task(buildDimStaff,
                 dependsOn=['extractStaff', 'transformCustomer'],
                 name='transformStaff'
-                ),
+            ),
             Task(buildDimDates,
                 dependsOn=['extractDates', 'transformStaff'],
                 name='transformDates'
-                ),
+            ),
             Task(buildDimFilm,
                 dependsOn=['extractFilm', 'extractLanguage', 'transformDates'],
                 name='transformFilm'
-                ),
+            ),
             Task(buildDimStore,
                 dependsOn=['extractStore', 'extractStaff', 'extractAddress', 'extractCity', 'extractCountry', 'transformFilm'],
                 name='transformStore'
-                ),
+            ),
             Task(buildFactRental,
                 dependsOn=['extractDates', 'extractInventory', 'transformDates', 'transformFilm', 'transformStaff', 'transformStore'],
                 name='transformFactRental'
-                ),
-            
+            )
         ]
     )
     
@@ -511,32 +517,32 @@ def main():
                 dependsOn=['transformCustomer'],
                 kwargs={'target': dw.customer},
                 name='loadCustomer'
-                ),
+            ),
             Task(loadData,
                 dependsOn=['transformStaff'],
                 kwargs={'target': dw.staff},
                 name='loadStaff'
-                ),
+            ),
             Task(loadData,
                 dependsOn=['transformDates'],
                 kwargs={'target': dw.date},
                 name='loadDates'
-                ),
+            ),
             Task(loadData,
                 dependsOn=['transformStore'],
                 kwargs={'target': dw.store},
                 name='loadStore'
-                ),
+            ),
             Task(loadData,
                 dependsOn=['transformFilm'],
                 kwargs={'target': dw.film},
                 name='loadFilm'
-                ),
+            ),
             Task(loadData,
                 dependsOn=['transformFactRental', 'loadFilm', 'loadStore', 'loadDates', 'loadStaff', 'loadCustomer'],
                 kwargs={'target': dw.factRental},
                 name='loadFactRental'
-                )
+            )
         ]
     )
     
@@ -566,7 +572,7 @@ def main():
     workflow.compose()
     
     # Optionally we can plot the DAG
-    #plot_dag(workflow.dag, savefig=True, path='dag.png')
+    plot_dag(workflow.dag, savefig=True, path='dag.png')
 
     # ============================ ENQUEUE ============================ #
     # This section uses the .collect() method which enqueues all tasks in the DAG to a task FIFO queue in topological order 
