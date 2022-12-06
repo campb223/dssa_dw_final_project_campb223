@@ -27,7 +27,7 @@ dvd = Schema('public')
 
 FACT_RENTAL = (
     Column('sk_customer', 'INT', False),
-    Column('sk_date', 'INT', False),
+    Column('sk_date', 'DATE', False),
     Column('sk_store', 'INT', False),
     Column('sk_film', 'INT', False),
     Column('sk_staff', 'INT', False),
@@ -67,8 +67,7 @@ DIM_FILM = (
 
 DIM_DATE = (
     Column('sk_date', 'TIMESTAMP', False),
-    Column('date', 'TIMESTAMP', False),
-    Column('quarter', 'INT', False),
+    Column('quarter_name', 'INT', False),
     Column('year', 'INT', False),
     Column('month', 'INT', False),
     Column('day', 'INT', False)
@@ -269,13 +268,12 @@ def buildDimDates(dates_df:pd.DataFrame, *args, **kwargs) -> pd.DataFrame:
         pd.DataFrame: date dimension object as a pandas dataframe
     """
     dates_df = dates_df.copy()
-    dates_df['sk_date'] = dates_df.rental_date.dt.strftime("%Y%m%d")
-    dates_df['date'] = dates_df.rental_date.dt.date
+    dates_df['sk_date'] = dates_df.rental_date.dt.strftime("%Y-%m-%d")
     dates_df['quarter'] = dates_df.rental_date.dt.quarter
     dates_df['year'] = dates_df.rental_date.dt.year
     dates_df['month'] = dates_df.rental_date.dt.month
     dates_df['day'] = dates_df.rental_date.dt.day
-    dim_dates = dates_df[['sk_date', 'date', 'quarter', 'year', 'month', 'day']].copy()
+    dim_dates = dates_df[['sk_date', 'quarter', 'year', 'month', 'day']].copy()
     dim_dates.drop_duplicates(inplace=True)
     return dim_dates
 
@@ -363,10 +361,11 @@ def buildFactRental(rental_df:pd.DataFrame,
     Returns:
         pd.DataFrame: fact rental object as a pandas dataframe
     """
+
+    rental_df.rename(columns={'customer_id':'sk_customer', 'rental_date':'sk_date'}, inplace=True)
+    rental_df['sk_date'] = rental_df.sk_date.dt.strftime("%Y-%m-%d")
     
-    rental_df.rename(columns={'customer_id':'sk_customer', 'rental_date':'date'}, inplace=True)
-    rental_df['date'] = rental_df.date.dt.date
-    rental_df = rental_df.merge(date_df, how='inner', on='date')
+    rental_df = rental_df.merge(date_df, how='inner', on='sk_date')
     rental_df = rental_df.merge(inventory_df, how='inner', on='inventory_id')
     rental_df = rental_df.merge(film_df, how='inner', left_on='film_id', right_on='sk_film')
     
@@ -390,7 +389,7 @@ def main():
         clearPastDBData()
     except:
         print('table must not have previously existed.')
-    
+
     # Creates a DAG for setting up the connection to the DB, building tables, and building relationships. 
     setup = Pipeline(
         steps=[
@@ -557,13 +556,7 @@ def main():
     teardown = Pipeline(
         steps =[
             Task(tearDown,
-                dependsOn= [
-                    'createCursor',
-                    setup,
-                    extract,
-                    transform,
-                    load
-                    ],
+                dependsOn= ['createCursor', load],
                 name='tearDown',
             )
             ]
