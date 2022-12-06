@@ -572,7 +572,7 @@ def main():
     workflow.compose()
     
     # Optionally we can plot the DAG
-    plot_dag(workflow.dag, savefig=True, path='dag.png')
+    #plot_dag(workflow.dag, savefig=True, path='dag.png')
 
     # ============================ ENQUEUE ============================ #
     # This section uses the .collect() method which enqueues all tasks in the DAG to a task FIFO queue in topological order 
