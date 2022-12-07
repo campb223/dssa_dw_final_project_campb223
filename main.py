@@ -362,9 +362,9 @@ def clearPastDBData():
     """
     Uses the global createCursor object to remove the existing schema 'dssa' then close the connection. Used for debugging so I can perform new executions to test Classes, Tasks, etc. 
     """
-    cursor = createCursor(databaseConfig, section)
-    cursor.execute("DROP SCHEMA dssa CASCADE;")
-    cursor.close()
+    cursor2 = createCursor(databaseConfig, section)
+    cursor2.execute("DROP SCHEMA dssa CASCADE;")
+    cursor2.close()
     
     
 def main():
