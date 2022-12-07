@@ -188,3 +188,9 @@ def main():
     # ============================ EXECUTION ============================ #
     workflow.run()
 ```
+
+
+## Credit/Sources
+A lot of credit goes to Professor Chatterton who implmenented a similar solution. However, his includes a lot of multiple inheritance and abstrac methods/classes. To make mine easier, a lof of that is consolidated down and only used the classes/methods I needed to build the necessary classes, methods, etc. 
+
+Link to his project: https://github.com/Chatterc/maellin
