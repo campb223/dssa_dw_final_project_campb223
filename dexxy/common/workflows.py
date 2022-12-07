@@ -1,8 +1,9 @@
-import cloudpickle as cpickle
+import pickle
 from dexxy.common.logger import LoggingStuff
 from dexxy.common.queues import QueueWarehouse
 from dexxy.common.tasks import Task, createTask
 from dexxy.common.workers import Worker
+from dexxy.common.scheduler import Scheduler
 from dexxy.common.exceptions import DependencyError, NotFoundError, CircularDependencyError, MissingDependencyError
 from typing import Any, List, Literal, Tuple, Dict, Type
 from uuid import uuid4
@@ -19,6 +20,7 @@ class Pipeline(LoggingStuff):
         Pipeline.pipeline_id += 1
         self.pid = Pipeline.pipeline_id
         self.dag = MultiDiGraph()
+        self.scheduler = Scheduler()
         self.steps = [step if isinstance(step, Pipeline) else createTask(step) for step in steps]
         self.type = type
         self._log = self.logger
@@ -278,3 +280,18 @@ class Pipeline(LoggingStuff):
                         else:
                             attr_G.update(attr_H)
                             self.dag.nodes[node][attr] = attr_G
+                            
+    def saveDAG(self, filename):
+        pipeline_bytes = pickle.dumps(self.dag)
+        
+        with open(filename, 'wb') as f:
+            f.write(pipeline_bytes)
+            
+        return self
+    
+    def openDAG(self, filename):
+        with open(filename, 'rb') as f:
+            pipline_bytes = f.read()
+            
+        self.dag = pickle.loads(pipline_bytes)
+        return self

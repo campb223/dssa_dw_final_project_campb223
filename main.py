@@ -567,12 +567,17 @@ def main():
         ]
     )
     
+    #workflow = Pipeline().openDAG('dags/dvd_test')
+    
     # ============================ COMPILATION ============================ #
     # This section composes the DAG from the provided Tasks 
     workflow.compose()
     
     # Optionally we can plot the DAG
     #plot_dag(workflow.dag, savefig=True, path='dag.png')
+    
+    # To save the DAG
+    #workflow.saveDAG('dags/dvd_pipeline')
 
     # ============================ ENQUEUE ============================ #
     # This section uses the .collect() method which enqueues all tasks in the DAG to a task FIFO queue in topological order 
