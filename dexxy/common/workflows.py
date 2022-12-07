@@ -27,7 +27,7 @@ class Pipeline(LoggingStuff):
 
     def validate_dag(self) -> None:
         """
-        Validates Pipeline is constructed properly. 
+        Validates Pipeline is constructed properly. Essentially checks to see if it is a DAG and is NOT weakly connected. 
         
         Raises:
             CircularDependencyError: Error if DAG contains cycles
@@ -46,8 +46,8 @@ class Pipeline(LoggingStuff):
         """
         Allow a Pipeline object to receive another Pipeline object by merging two Graphs together and preserving attributes.
         
-        Returns a new graph of self composed with H. Composition is the simple union of the node sets and edge sets. The node sets of G and H do not need to be disjoint. \
-            Note: Edges in G that have the same edge key as edges in H will be overwritten with edges from H.
+        Returns a new graph of self composed with G. Composition is the simple union of the node sets and edge sets. The node sets of G and self.dag do not need to be disjoint. \
+            Note: Edges in G that have the same edge key as edges in H will be overwritten with edges from self.dag.
             
         Args:
             self (MultiDiGraph): First MultiDiGraph Instance
