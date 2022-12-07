@@ -96,13 +96,10 @@ There are a few processes that need to take place to create this model. The gene
 *   `star-schema.jpg` - The Star-Schema relationships we are tasked with creating. 
 
 ## How Did I Develop My Python Modules? 
-*   `Logger` - A class to track the progress of the DAG during runtime. A typical output looks like `2022-12-02 19:03:00,764 :: Worker :: INFO :: Running Tasks tearDown on Worker 1`. 
-<br>
-*   `Postgres` - A class which creates a connection to a PostgreSQL database. Inside `config/database.ini` the table definitions need to be supplied. Remember to put this in your .gitignore to prevent database credentials from being seen. 
-<br>
-*   `Queue` -  A First In - First Out (FIFO) design pattern. My Queue is called a `warehouse`. Currently there is only one type that is initiated -- Default = ThreadSafeQueue. 
-<br>
-*   `Tasks` - This creates a Task class for individual nodes in the DAG. It allows me to set `dependsOn` variables which are used to determine the order of operations. Example of creating a Task to initalize a connection to a database:
+*   <b>Logger</b> - A class to track the progress of the DAG during runtime. A typical output looks like `2022-12-02 19:03:00,764 :: Worker :: INFO :: Running Tasks tearDown on Worker 1`. 
+*   <b>Postgres</b> - A class which creates a connection to a PostgreSQL database. Inside `config/database.ini` the table definitions need to be supplied. Remember to put this in your .gitignore to prevent database credentials from being seen. 
+*   <b>Queue</b> -  A First In - First Out (FIFO) design pattern. My Queue is called a `warehouse`. Currently there is only one type that is initiated -- Default = ThreadSafeQueue. 
+*   <b>Tasks</b> - This creates a Task class for individual nodes in the DAG. It allows me to set `dependsOn` variables which are used to determine the order of operations. Example of creating a Task to initalize a connection to a database:
 
 ```
 Task(createCursor,
@@ -111,10 +108,8 @@ Task(createCursor,
     name='createCursor'),
 ```
 
-*   `Worker` - Essentially just a for loop for grabbing Tasks from the queue then processing them. Durring runtime, the workflow calls `.run()` which calls the Worker to start execution. 
-<br>
-*   `Workflow` - This is where the Pipeline and DAG are defined. Included functions to verify it's a DAG, merge DAGs, process dependencies, etc. 
-<br>
+*   <b>Worker</b> - Essentially just a for loop for grabbing Tasks from the queue then processing them. Durring runtime, the workflow calls `.run()` which calls the Worker to start execution. 
+*   <b>Workflow</b> - This is where the Pipeline and DAG are defined. Included functions to verify it's a DAG, merge DAGs, process dependencies, etc. 
 
 ## How To Organize `main.py` 
 *   As always in Python list your imports at the top of the file. 
