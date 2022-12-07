@@ -71,7 +71,9 @@ def getTaskResult(task) -> Tuple[Any]:
     # If there's a task
     if task is not None:
         data = task.result
+        # If the task had a returned item(s) 
         if data is not None:
+            # Add the returned item(s) so they can used in subsequent function calls. 
             inputs.append(data)
     return tuple(inputs)
 

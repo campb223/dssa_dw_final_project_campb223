@@ -45,11 +45,15 @@ class PostgresClient():
 
         # Read the configuration file
         config_parser.read(path)
+        # If the file has the same section as passed in
         if config_parser.has_section(section):
+            # Read the parameters specified. 
             config_params = config_parser.items(section)
+            # Add each paramter after the = to a dictionary 
             for k, v in config_params:
                 conn_dict[k] = v
 
+        # Est a connection to the DB using the paramters read in. 
         conn = connect(conninfo=make_conninfo(**conn_dict), **kwargs)
 
         return conn

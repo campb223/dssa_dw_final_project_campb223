@@ -29,7 +29,7 @@ class Worker(LoggingStuff):
         """
         Starts execution. 
         """
-        # Starts workers for processing Tasks
+        # Log the job we're starting and call run(). From within run, we'll loop through the taskQueue and execute the Tasks. ß
         self._log.info('Starting Job %s' % self.job_id)
         return self.run()
         
@@ -38,33 +38,43 @@ class Worker(LoggingStuff):
         A loop that processes getting Tasks from the queue and processing them based on their instructions defined. 
         """
 
+        # While there are remaining items in the taskQueue -- execute them
         while not self.taskQueue.empty():
             
+            # Get the Task to run. 
             _task = self.taskQueue.get()
+            
+            # Update the status of the Task to Running and log this 
             _task.updateStatus('Running')
             self._log.info('Running Tasks %s on Worker %s ' % (_task.name, self.workerID))
             
+            # If there's dependencies
             if _task.dependsOn:
                 inputs = ()
                 for depTask in list(dict.fromkeys(_task.dependsOn).keys()):
                     for completedTask in list(self.resultQueue.queue):
                         if depTask.tid == completedTask.tid:
                             inputData = getTaskResult(completedTask)
+                            # Add the returned func data (if any) so it can be used during run(inputs)
                             inputs = inputs + inputData
             else:
+                # If no dependencies, shouldn't be anything to pass into the next func call
                 inputs = tuple()
-                
+            
+            # Execute the Task and update status once completed. 
             _task.run(inputs)
             _task.updateStatus('Completed')
             
+            # Add the task that just finished to the resultsQueue
             self.resultQueue.put(_task)
             
+            # Remove the Task that just completed from the taskQueue. 
             self.taskQueue.task_done()
             
     def end(self):
         """
         Ends the execution. 
         """
-        # Stops execution of Tasks
+        # Stops execution of Tasks by deleting the resultQueue
         del self.resultQueue
         

@@ -66,15 +66,15 @@ class Pipeline(LoggingStuff):
         Process Dependencies that contain another Pipeline
 
         Args:
-            idx (_type_): _description_
-            task (_type_): _description_
-            dep (_type_): _description_
+            idx (int): The iteration index we're currently processing on. 
+            task (Task): The Task to process dependencies of. 
+            dep (Any): The dependncy to evaluate
 
         Raises:
-            DependencyError: _description_
+            DependencyError: Thrown if the dependency was not found in the Pipeline. 
 
         Returns:
-            _type_: _description_
+            (task, dep_task): The Task and dependent Task
         """
         # gets the last step from the pipeline dependency
         dep_task = dep.steps[-1]
@@ -92,8 +92,22 @@ class Pipeline(LoggingStuff):
         return (task, dep_task)
 
     def proc_named_dep(self, idx: int, task: Task, dep: str, input_pipe: "Pipeline"):
-        """Process Dependencies that contain a reference to another task"""
-        # this is very ugly and needs to be refactored
+        """
+        Process Dependencies that contain a reference to another task
+
+        Args:
+            idx (int): The iteration index we're currently processing on. 
+            task (Task): The Task to process dependencies of. 
+            dep (str): The dependncy to evaluate
+            input_pipe (Pipeline): A Pipeline which could a previous pipeline we'll need to pull dependencies from. 
+
+        Raises:
+            DependencyError: Thrown if the dependency was not found in the Pipeline. 
+
+        Returns:
+            (task, dep_task): The Task and dependent Task
+        """
+        
         try:
             dep_task = self.get_task_by_name(name=dep)
             dag = self.dag
@@ -112,37 +126,34 @@ class Pipeline(LoggingStuff):
 
         return (task, dep_task)
 
-    def proc_task_dep(self, task, dep, input_pipe):
-        """Processes Dependencies that contain a subclass of a Task."""
-
-        # Lookup dependent task from the current pipeline
-        pipe = self
-        if dep.tid not in self.dag:
-            pipe = input_pipe
-        if pipe.dag.nodes[dep.tid].get('tasks', None) is not None:
-            for k in pipe.dag.nodes[dep.tid]['tasks'].keys():
-                for tsk in pipe.steps:
-                    if k == tsk.tid:
-                        task.related.append(k)
-        else:
-            raise DependencyError(f'{dep} was not found in {self.__name__}, check pipeline steps.')
-
-        return (task, dep)
-
     def process_dep(self, idx: int, task: Task, dep: Any, input_pipe: "Pipeline") -> Tuple[Task, Task]:
-        """Basic Factory function for processing dependencies.
         """
+        Basic Factory function for processing dependencies.
+
+        Args:
+            idx (int): The iteration index we're currently processing on. 
+            task (Task): The Task to process dependencies of. 
+            dep (Any): The dependncy to evaluate
+            input_pipe (Pipeline): A Pipeline which could a previous pipeline we'll need to pull dependencies from.
+
+        Raises:
+            TypeError: Raised if a Type we haven't accounted for is passed in. 
+
+        Returns:
+            Tuple[Task, Task]: The Task and dependent Task
+        """
+        
         if isinstance(dep, Pipeline):
             return self.proc_pipeline_dep(idx, task, dep)
         elif isinstance(dep, str):
             return self.proc_named_dep(idx, task, dep, input_pipe)
-        elif issubclass(type(dep), Task):
-            return self.proc_task_dep(task, dep, input_pipe)
         else:
             raise TypeError("Invalid Dependencies found in {self.__name__}: Task {task.__name__} ")
 
     def get_task_by_name(self, name: str) -> Task:
-        """Retrieves an Task from the DAG using its name
+        """
+        Retrieves a Task from the DAG using its name
+        
         Args:
             name (str): The name of the Task
         Raises:
@@ -150,7 +161,7 @@ class Pipeline(LoggingStuff):
         Returns:
             Task: The task that matches the name parameter.
         """
-        for tsk_attrs in self.get_all_attributes(name='tasks'):
+        for tsk_attrs in dict(self.dag.nodes(data='tasks', default=None)).values():
             if tsk_attrs is not None:
                 for tsk in tsk_attrs.values():
                     if tsk.name == name:
@@ -186,14 +197,17 @@ class Pipeline(LoggingStuff):
         self.validate_dag()
 
     def collect(self) -> None:
-        """Enqueues all Tasks from the constructed DAG in topological sort order
+        """
+        Enqueues all Tasks from the constructed DAG in topological sort order
         """
 
+        # Defining a Queue. 
         self.queue = QueueWarehouse.warehouse(self.type)
+        
         # Begin Enqueuing all Tasks in the DAG
         nodes = dict(self.dag.nodes(data=True))
-        # Get Topological sort of Task Nodes by Id
         
+        # Get Topological sort of Task Nodes by Id
         for task_node_id in list(topological_sort(G=self.dag)):
             # Lookup each task in a node
             n_attrs = nodes[task_node_id]
@@ -203,8 +217,10 @@ class Pipeline(LoggingStuff):
                 v.updateStatus('Queued')
 
     def run(self) -> Any:
-        """Allows for Local Execution of a Pipeline Instance. Good for Debugging
-        for advanced features and concurrency support use submit"""
+        """
+        Allows for Local Execution of a Pipeline Instance. When called, a queue is generated, the Worker is set up, log shows beginning execution, and the worker is started. 
+        Once completed, the worker is ended (by deleting the result queue)
+        """
         
         self.result_queue = QueueWarehouse.warehouse(self.type)
 
@@ -214,6 +230,8 @@ class Pipeline(LoggingStuff):
         # Start execution of Tasks
         self._log.info('Starting Execution')
         worker.start()
+        
+        # Ends execution of Tasks
         worker.end()
         
     def add_node_to_dag(self, task: Type[Task] = None, properties: Dict = None) -> None:
@@ -249,16 +267,6 @@ class Pipeline(LoggingStuff):
         # Add the edge to the DAG
         self.dag.add_edges_from([(tid_from, tid_to, activity_id, {"pid": pid, "tid_from": tid_from, "tid_to": tid_to,})])
 
-    def get_all_attributes(self, name: str = None) -> dict:
-        """Gets all matching attributes found in a Graph
-        Args:
-            name (str, optional): Name of the attribute. Defaults to None.
-        Returns:
-            dict: a dict of dicts containing matching attributes of a graph
-        """
-        attr = dict(self.dag.nodes(data=name, default=None)).values()
-        return attr
-
     def repair_attributes(self, G: MultiDiGraph, H: MultiDiGraph, attr: str) -> None:
         """
         Preserved node attributes that may be overwritten when using merge. Note: this method only works if the attribute being preserved is a dictionary
@@ -269,19 +277,36 @@ class Pipeline(LoggingStuff):
             attr (str): name of attribute
         """
         
+        # Looping through each node in G
         for node in G.nodes():
+            # If the node is also in H
             if node in H:
+                # If this nodes has an attribute(s)
                 if self.dag.nodes[node].get(attr, None) is not None:
+                    # Save those attributes
                     attr_G = G.nodes[node].get(attr)
                     if attr_G is not None:
                         attr_H = H.nodes[node].get(attr)
+                        # If the attributes are = then we're good. Continue to next iteration. 
                         if attr_G == attr_H:
                             continue
+                        # Otherwise, repair the attirbutes on this node. 
                         else:
                             attr_G.update(attr_H)
                             self.dag.nodes[node][attr] = attr_G
                             
     def saveDAG(self, filename):
+        """
+        In order to save a DAG and execute later, we take in the pipeline, seralize the DAG with pickle, then save the dag to a file/path specified in filename. 
+
+        Args:
+            filename (str): The path and filename to save the DAG as. 
+                Example filename='dags/dvd_rental' --> This would save the DAG in a folder called 'dags' as 'dvd_rental'
+
+        Returns:
+            self: returns itself back to where it was called. Allows for additional execution on this Pipeline. 
+        """
+        
         pipeline_bytes = pickle.dumps(self.dag)
         
         with open(filename, 'wb') as f:
@@ -290,6 +315,16 @@ class Pipeline(LoggingStuff):
         return self
     
     def openDAG(self, filename):
+        """
+        Reads in a DAG from a filename provided. This is necessary to begin processing the DAG by the scheduler. 
+
+        Args:
+            filename (str): The path and filename to load the DAG froom. 
+                Example filename='dags/dvd_rental' --> This would load the DAG from a folder called 'dags' with the files actual name = 'dvd_rental'
+
+        Returns:
+            self: returns itself back to where it was called. Allows for additional execution on this Pipeline. 
+        """
         with open(filename, 'rb') as f:
             pipline_bytes = f.read()
             

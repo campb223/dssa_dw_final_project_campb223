@@ -1,7 +1,11 @@
 from queue import Queue as ThreadSafeQueue
 
 class QueueWarehouse:
-    @staticmethod
+    @staticmethod 
+    
+    # @staticmethod is a built-in decorator that defines a static method in the class in Python. 
+    # A static method doesn't receive any reference argument whether it is called by an instance of a class or by the class itself.
+    
     def warehouse(type: str ='default') -> ThreadSafeQueue:
         """
         A "Queue Warehouse" that returns a queue which can be used to track the order of operation of Tasks/Pipelines/Workflows. 
@@ -14,16 +18,10 @@ class QueueWarehouse:
                     return AsyncQueue()  
 
         Args:
-            type (str, optional): Defaults to 'default'.
-
-        Raises:
-            ValueError: If the 'type' is not 'default'. This is subject to change based off the information above regarding asyncio. 
+            type (str, optional): Defaults to 'default'. 
 
         Returns:
             ThreadSafeQueue: A queue that can be used for storing the order of operation of Tasks/Pipelines/etc. 
         """
         
-        if type == 'default':
-            return ThreadSafeQueue()
-        else:
-            raise ValueError(type)
+        return ThreadSafeQueue()
