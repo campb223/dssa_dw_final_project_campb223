@@ -622,8 +622,11 @@ def main():
     #       If so -- it tries to drop it. If it fails, it loops till you press 'e' to exit. 
     clearDB = input('Would you like to drop an existing database schema? (y/n)\n ')
     if(clearDB == 'y'):
-        schemaToDrop = input('What is the schema name you would like to drop? \n')
+        tempCursor = createCursor(databaseConfig, section)
+        availSchemas = tempCursor.execute('SELECT schema_name FROM information_schema.schemata;').fetchall()
+        schemaToDrop = input(f'Which of the following schemas would like to drop? \n{availSchemas}\n')
         clearPastDBSchema(schemaToDrop)
+        tempCursor.close()
     elif(clearDB == 'n'):
         print()
     else:
