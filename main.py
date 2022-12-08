@@ -364,6 +364,11 @@ def clearPastDBSchema(schemaToDrop: str):
     Uses a createCursor object to remove the existing schema 'schemaToDrop' then close the connection.
     This will loop till the user selects 'e' if we can't find the schema. 
     """
+    
+    if (schemaToDrop == 'public'):
+        print("You can't drop the public schema.\n")
+        return
+    
     try:
         cursor2 = createCursor(databaseConfig, section)
         cursor2.execute(f"DROP SCHEMA {schemaToDrop} CASCADE;")
@@ -375,7 +380,6 @@ def clearPastDBSchema(schemaToDrop: str):
             return
         else:
             clearPastDBSchema(schemaToDrop)
-    
     
 def executeWorkflow(needToRun: bool, needToSave: bool, filename: str = None):
     # Creates a DAG for setting up the connection to the DB, building tables, and building relationships. 
