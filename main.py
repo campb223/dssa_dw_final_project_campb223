@@ -6,6 +6,7 @@ from dexxy.common.tasks import Task
 from dexxy.common.workflows import Pipeline
 from dexxy.common.plotting import plot_dag
 from dexxy.database.postgres import PostgresClient
+import time
 
 
 ################## Parameters ###################
@@ -358,23 +359,25 @@ def buildFactRental(rental_df:pd.DataFrame, inventory_df:pd.DataFrame, date_df:p
     rental_df = rental_df[['sk_customer', 'sk_date', 'sk_store', 'sk_film', 'sk_staff', 'count_rentals']].copy()
     return rental_df
 
-def clearPastDBData():
+def clearPastDBSchema(schemaToDrop: str):
     """
-    Uses the global createCursor object to remove the existing schema 'dssa' then close the connection. Used for debugging so I can perform new executions to test Classes, Tasks, etc. 
+    Uses a createCursor object to remove the existing schema 'schemaToDrop' then close the connection.
+    This will loop till the user selects 'e' if we can't find the schema. 
     """
-    cursor2 = createCursor(databaseConfig, section)
-    cursor2.execute("DROP SCHEMA dssa CASCADE;")
-    cursor2.close()
-    
-    
-def main():
-    
     try:
-        clearPastDBData()
-        print("Schema has been removed. ")
+        cursor2 = createCursor(databaseConfig, section)
+        cursor2.execute(f"DROP SCHEMA {schemaToDrop} CASCADE;")
+        cursor2.close()
+        print("The schema has been succesfully dropped.\n")
     except:
-        print('Schema must not have previously existed.')
-
+        schemaToDrop = input("The schema could not be found. Enter another schema name if you would like to try again or e to exit.\n")
+        if schemaToDrop == 'e':
+            return
+        else:
+            clearPastDBSchema(schemaToDrop)
+    
+    
+def executeWorkflow(needToRun: bool, needToSave: bool, filename: str = None):
     # Creates a DAG for setting up the connection to the DB, building tables, and building relationships. 
     setup = Pipeline(
         steps=[
@@ -567,17 +570,37 @@ def main():
         ]
     )
     
-    #workflow = Pipeline().openDAG('dags/dvd_test')
+    if(needToSave == True):
+        # ============================ COMPILATION ============================ #
+        # This section composes the DAG from the provided Tasks 
+        workflow.compose()
+        workflow.saveDAG(filename)
+        print(f'Workflow has been saved to {filename}\nExiting.')
+        return
     
-    # ============================ COMPILATION ============================ #
-    # This section composes the DAG from the provided Tasks 
-    workflow.compose()
+    if(needToRun == True):
+        # ============================ COMPILATION ============================ #
+        # This section composes the DAG from the provided Tasks 
+        workflow.compose()
+
+        # ============================ ENQUEUE ============================ #
+        # This section uses the .collect() method which enqueues all tasks in the DAG to a task FIFO queue in topological order 
+        workflow.collect()
+
+        # ============================ EXECUTION ============================ #
+        # Runs the workflow locally using a single worker
+        workflow.run()
+        print('The workflow has been proccessed. \nExiting.')
+        return
+        
+    return 
     
-    # Optionally we can plot the DAG
-    #plot_dag(workflow.dag, savefig=True, path='dag.png')
+def processWorkflow(workflow: Pipeline, needToCompose: bool):
     
-    # To save the DAG
-    #workflow.saveDAG('dags/dvd_pipeline')
+    if needToCompose == True:
+        # ============================ COMPILATION ============================ #
+        # This section composes the DAG from the provided Tasks 
+        workflow.compose()
 
     # ============================ ENQUEUE ============================ #
     # This section uses the .collect() method which enqueues all tasks in the DAG to a task FIFO queue in topological order 
@@ -586,6 +609,73 @@ def main():
     # ============================ EXECUTION ============================ #
     # Runs the workflow locally using a single worker
     workflow.run()
+    
+    return
+    
+def main():
+    
+    # Prompts to see if you would like to drop a previously created DB schema. 
+    #       If so -- it tries to drop it. If it fails, it loops till you press 'e' to exit. 
+    clearDB = input('Would you like to drop an existing database schema? (y/n)\n ')
+    if(clearDB == 'y'):
+        schemaToDrop = input('What is the schema name you would like to drop? \n')
+        clearPastDBSchema(schemaToDrop)
+    elif(clearDB == 'n'):
+        print()
+    else:
+        print("You've entered an invalid input. Please re-run this script and do better.")
+        return 
+    
+    
+    
+    # Prompts to give you 3 options:
+    #   1. Build the Pipeline and save the DAG (no execution)
+    #   2. Build the DAG and execute
+    #   3. Load and execute a DAG
+    decision = input('Would you like to: \n1. Build the Pipeline and save the DAG (no execution)\n2. Build the DAG and execute\n3. Load and execute a DAG\n\nPlease enter the number of your selection.\n')
+    
+    # Option 1
+    if decision == '1':
+        filename = input('What would you like to save the DAG as?\n')
+        # If the filename starts with 'dags/' then we're good to use that as the filename
+        if filename.startswith('dags/'):
+            print('Filename starts with "dags/". Continuing \n')
+        # If the filename doesn't start with 'dags/' we add it for the user(s). 
+        else:
+            filename = 'dags/' + str(filename)
+            print('Filename must start with "dags/". It has been added for you.\n')
+        
+        # Build the workflow and save the file
+        executeWorkflow(needToRun=False, needToSave=True, filename=filename)
+        return
+    
+    # Option 2
+    elif decision == '2':
+        # Build the workflow and execute the DAG
+        executeWorkflow(needToRun=True, needToSave=False, filename=None)
+        return
+    
+    # Option 3
+    elif decision == '3':
+        filename = input('What is the filename of the DAG you would like to load?\n')
+        
+        # If the filename starts with 'dags/' then we can open that file
+        if(filename.startswith('dags/')):
+            workflow = Pipeline().openDAG(filename)
+        # If the filename doesn't start with 'dags/' then add it to the beginning of the filename for the user(s). 
+        else:
+            filename = 'dags/' + str(filename)
+            workflow = Pipeline().openDAG(filename)
+        print('File has been opened.')
+            
+        # Process the workflow
+        processWorkflow(workflow, False)
+        print('The workflow has been proccessed. Exiting.')
+        return
+    
+    else:
+        print("You've entered an invalid input. Please re-run this script and do better.")
+        return 
     
 
 if __name__ == '__main__':
